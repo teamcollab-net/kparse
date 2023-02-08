@@ -65,9 +65,22 @@ func TestMapTagDecoder(t *testing.T) {
 					City    string `map:"city"`
 					Country string `map:"country"`
 				} `map:"address"`
+
+				OptionalStruct struct {
+					ID int `map:"id"`
+				} `map:"optional_struct"`
 			}
+			// These three should still be present after the parsing:
+			user.OptionalStruct.ID = 42
+			user.Username = "presetUsername"
+			user.Address.Street = "presetStreet"
+
+			// These two should be overwritten by the parser:
+			user.ID = 43
+			user.Address.Country = "presetCountry"
+
 			err := structscanner.Decode(&user, newMapTagDecoder("map", map[string]interface{}{
-				"id": 42,
+				"id": 44,
 				"address": map[string]interface{}{
 					"city":    "fakeCity",
 					"country": "fakeCountry",
@@ -75,32 +88,124 @@ func TestMapTagDecoder(t *testing.T) {
 			}))
 			tt.AssertNoErr(t, err)
 
-			tt.AssertEqual(t, user.ID, 42)
-			tt.AssertEqual(t, user.Username, "")
-			tt.AssertEqual(t, user.Address.Street, "")
+			tt.AssertEqual(t, user.ID, 44)
+			tt.AssertEqual(t, user.Username, "presetUsername")
+			tt.AssertEqual(t, user.Address.Street, "presetStreet")
 			tt.AssertEqual(t, user.Address.City, "fakeCity")
 			tt.AssertEqual(t, user.Address.Country, "fakeCountry")
+			tt.AssertEqual(t, user.OptionalStruct.ID, 42)
 		})
 
 		t.Run("should return error for missing fields if they are required", func(t *testing.T) {
+			tests := []struct {
+				desc               string
+				input              map[string]interface{}
+				expectErrToContain []string
+			}{
+				{
+					desc: "required field missing on root map",
+					input: map[string]interface{}{
+						"id": 42,
+						"address": map[string]interface{}{
+							"street":  "fakeStreet",
+							"city":    "fakeCity",
+							"country": "fakeCountry",
+						},
+					},
+					expectErrToContain: []string{"missing", "required", "config", "username"},
+				},
+				{
+					desc: "required field missing on nested map",
+					input: map[string]interface{}{
+						"id":       42,
+						"username": "fakeUsername",
+						"address": map[string]interface{}{
+							"city":    "fakeCity",
+							"country": "fakeCountry",
+						},
+					},
+					expectErrToContain: []string{"missing", "required", "config", "street"},
+				},
+				{
+					desc: "required field missing is a map",
+					input: map[string]interface{}{
+						"id":       42,
+						"username": "fakeUsername",
+					},
+					expectErrToContain: []string{"missing", "required", "config", "address"},
+				},
+			}
+
+			for _, test := range tests {
+				t.Run(test.desc, func(t *testing.T) {
+					var user struct {
+						ID       int    `map:"id"`
+						Username string `map:"username,required"`
+						Address  struct {
+							Street  string `map:"street,required"`
+							City    string `map:"city"`
+							Country string `map:"country"`
+						} `map:"address,required"`
+					}
+					err := structscanner.Decode(&user, newMapTagDecoder("map", test.input))
+
+					tt.AssertErrContains(t, err, test.expectErrToContain...)
+				})
+			}
+		})
+
+		t.Run("should return error if the modifier is not 'required'", func(t *testing.T) {
 			var user struct {
 				ID       int    `map:"id"`
-				Username string `map:"username,required"`
+				Username string `map:"username,not_required"`
+			}
+			err := structscanner.Decode(&user, newMapTagDecoder("map", map[string]interface{}{
+				"id":       42,
+				"username": "fakeUsername",
+			}))
+
+			tt.AssertErrContains(t, err, "modifier", "not_required")
+		})
+	})
+
+	t.Run("using the default tag", func(t *testing.T) {
+		t.Run("should work for multiple types of fields", func(t *testing.T) {
+			var user struct {
+				ID       int    `map:"id"`
+				Username string `map:"username" default:"defaultUsername"`
 				Address  struct {
-					Street  string `map:"street"`
+					Street  string `map:"street" default:"defaultStreet"`
 					City    string `map:"city"`
 					Country string `map:"country"`
 				} `map:"address"`
+
+				OptionalStruct struct {
+					ID int `map:"id" default:"41"`
+				} `map:"optional_struct"`
 			}
+
+			// These all these should be overwritten by the parser:
+			user.ID = 43
+			user.Address.Country = "presetCountry"
+			user.OptionalStruct.ID = 42
+			user.Username = "presetUsername"
+			user.Address.Street = "presetStreet"
+
 			err := structscanner.Decode(&user, newMapTagDecoder("map", map[string]interface{}{
-				"id": 42,
+				"id": 44,
 				"address": map[string]interface{}{
 					"city":    "fakeCity",
 					"country": "fakeCountry",
 				},
 			}))
+			tt.AssertNoErr(t, err)
 
-			tt.AssertErrContains(t, err, "missing", "required", "username")
+			tt.AssertEqual(t, user.ID, 44)
+			tt.AssertEqual(t, user.Username, "defaultUsername")
+			tt.AssertEqual(t, user.Address.Street, "defaultStreet")
+			tt.AssertEqual(t, user.Address.City, "fakeCity")
+			tt.AssertEqual(t, user.Address.Country, "fakeCountry")
+			tt.AssertEqual(t, user.OptionalStruct.ID, 41)
 		})
 	})
 }
