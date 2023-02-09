@@ -11,6 +11,9 @@ lint: setup
 	@go vet $(path) $(args)
 	@echo "StaticCheck & Go Vet found no problems on your code!"
 
+simple_usage:
+	go run examples/simple_usage/main.go
+
 setup: $(GOBIN)/richgo $(GOBIN)/staticcheck
 
 $(GOBIN)/richgo:

@@ -4,20 +4,29 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/vingarcia/structscanner"
 	"gopkg.in/yaml.v2"
 )
 
-func MustParseYAMLFile(filename string, targetStruct any) {
-	err := ParseYAMLFile(filename, targetStruct)
+func MustParseYAMLFile(filepath string, targetStruct any) {
+	err := ParseYAMLFile(filepath, targetStruct)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func ParseYAMLFile(filename string, targetStruct any) error {
-	file, err := os.Open(filename)
+func ParseYAMLFile(path string, targetStruct any) error {
+	if !filepath.IsAbs(path) {
+		workingDir, err := os.Getwd()
+		if err != nil {
+			return err
+		}
+		path = filepath.Join(workingDir, path)
+	}
+
+	file, err := os.Open(path)
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,7 @@
+secretKey: 42
+
+baseUrl: example.com
+
+address:
+  city: Belo Horizonte
+  country: Brasil
