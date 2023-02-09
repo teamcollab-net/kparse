@@ -14,7 +14,7 @@ import (
 // It works recursively so you can pass nested structs to it.
 type mapTagDecoder struct {
 	tagName   string
-	sourceMap map[string]any
+	sourceMap map[any]any
 }
 
 // newMapTagDecoder returns a new decoder for filling a given struct
@@ -22,7 +22,7 @@ type mapTagDecoder struct {
 //
 // The values from the sourceMap will be mapped to the struct using the key
 // present in the tagName of each field of the struct.
-func newMapTagDecoder(tagName string, sourceMap map[string]interface{}) mapTagDecoder {
+func newMapTagDecoder(tagName string, sourceMap map[any]any) mapTagDecoder {
 	return mapTagDecoder{
 		tagName:   tagName,
 		sourceMap: sourceMap,
@@ -30,20 +30,21 @@ func newMapTagDecoder(tagName string, sourceMap map[string]interface{}) mapTagDe
 }
 
 // DecodeField implements the TagDecoder interface
-func (e mapTagDecoder) DecodeField(info structscanner.Field) (interface{}, error) {
-	keys := strings.SplitN(info.Tags[e.tagName], ",", 2)
-	key := keys[0]
+func (e mapTagDecoder) DecodeField(info structscanner.Field) (any, error) {
+	// Ignore multiples fields with there is a `,` as in `json:"foo,omitempty"`
+	key := strings.SplitN(info.Tags[e.tagName], ",", 2)[0]
 
 	required := false
-	if len(keys) > 1 {
-		if keys[1] != "required" {
+	if info.Tags["validate"] != "" {
+		validations := strings.Split(info.Tags["validate"], ",")
+		if validations[0] != "required" {
 			return nil, fmt.Errorf(
-				"unrecognized modifier: '%s' on struct field: '%s'",
-				keys[1], info.Name,
+				"unrecognized validation: '%s' on struct field: '%s'",
+				validations[0], info.Name,
 			)
 		}
 
-		required = keys[1] != ""
+		required = true
 	}
 
 	if e.sourceMap[key] == nil {
@@ -63,7 +64,7 @@ func (e mapTagDecoder) DecodeField(info structscanner.Field) (interface{}, error
 		// If it is a struct we keep parsing its fields
 		// just to set the default values if they exist:
 		if info.Kind == reflect.Struct {
-			return newMapTagDecoder(e.tagName, map[string]interface{}{}), nil
+			return newMapTagDecoder(e.tagName, map[any]any{}), nil
 		}
 
 		// If it is not required we can safely ignore it:
@@ -71,7 +72,7 @@ func (e mapTagDecoder) DecodeField(info structscanner.Field) (interface{}, error
 	}
 
 	if info.Kind == reflect.Struct {
-		nestedMap, ok := e.sourceMap[key].(map[string]interface{})
+		nestedMap, ok := e.sourceMap[key].(map[any]any)
 		if !ok {
 			return nil, fmt.Errorf(
 				"can't map %T into nested struct %s of type %v",
