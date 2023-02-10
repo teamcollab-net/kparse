@@ -222,4 +222,42 @@ func TestMapTagDecoder(t *testing.T) {
 			tt.AssertEqual(t, user.OptionalStruct.ID, 41)
 		})
 	})
+
+	t.Run("parsing slices", func(t *testing.T) {
+		tests := []struct {
+			desc          string
+			inputSlice    any
+			expectedSlice any
+		}{
+			{
+				desc: "should work for string slices",
+				inputSlice: []string{
+					"fakeUser1",
+					"fakeUser2",
+				},
+				expectedSlice: []string{
+					"fakeUser1",
+					"fakeUser2",
+				},
+			},
+		}
+
+		for _, test := range tests {
+			t.Run(test.desc, func(t *testing.T) {
+				var user struct {
+					ID    int      `map:"id"`
+					Slice []string `map:"slice"`
+				}
+
+				err := structscanner.Decode(&user, newMapTagDecoder("map", map[any]any{
+					"id":    42,
+					"slice": test.inputSlice,
+				}))
+				tt.AssertNoErr(t, err)
+
+				tt.AssertEqual(t, user.ID, 42)
+				tt.AssertEqual(t, user.Slice, test.expectedSlice)
+			})
+		}
+	})
 }
