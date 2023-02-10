@@ -32,7 +32,7 @@ func ParseYAMLFile(path string, targetStruct any) error {
 	}
 
 	defer file.Close()
-	return ParseYAMLReader(file, targetStruct)
+	return ParseYAMLFromReader(file, targetStruct)
 }
 
 func MustParseYAML(file []byte, targetStruct any) {
@@ -43,17 +43,17 @@ func MustParseYAML(file []byte, targetStruct any) {
 }
 
 func ParseYAML(file []byte, targetStruct any) error {
-	return ParseYAMLReader(bytes.NewReader(file), targetStruct)
+	return ParseYAMLFromReader(bytes.NewReader(file), targetStruct)
 }
 
-func MustParseYAMLReader(file io.Reader, targetStruct any) {
-	err := ParseYAMLReader(file, targetStruct)
+func MustParseYAMLFromReader(file io.Reader, targetStruct any) {
+	err := ParseYAMLFromReader(file, targetStruct)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func ParseYAMLReader(file io.Reader, targetStruct any) error {
+func ParseYAMLFromReader(file io.Reader, targetStruct any) error {
 	var parsedYaml map[any]any
 	err := yaml.NewDecoder(file).Decode(&parsedYaml)
 	if err != nil {
