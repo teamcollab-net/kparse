@@ -104,6 +104,20 @@ func TestParseYAMLReader(t *testing.T) {
 				Bar: "foo",
 			},
 		},
+		{
+			desc: "should work with string slices",
+			input: map[string]any{
+				"bar": []string{"fakeItem1", "fakeItem2"},
+			},
+			targetStruct: &struct {
+				Slice []string `yaml:"bar"`
+			}{},
+			expectedStruct: &struct {
+				Slice []string `yaml:"bar"`
+			}{
+				Slice: []string{"fakeItem1", "fakeItem2"},
+			},
+		},
 	}
 
 	for _, test := range tests {
