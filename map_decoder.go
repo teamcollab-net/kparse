@@ -31,7 +31,7 @@ func newMapTagDecoder(tagName string, sourceMap map[any]any) mapTagDecoder {
 
 // DecodeField implements the TagDecoder interface
 func (e mapTagDecoder) DecodeField(info structscanner.Field) (any, error) {
-	// Ignore multiples fields with there is a `,` as in `json:"foo,omitempty"`
+	// Ignore multiples fields if there is a `,` as in `json:"foo,omitempty"`
 	key := strings.SplitN(info.Tags[e.tagName], ",", 2)[0]
 
 	required := false

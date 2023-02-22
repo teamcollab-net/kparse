@@ -118,6 +118,26 @@ func TestParseYAMLReader(t *testing.T) {
 				Slice: []string{"fakeItem1", "fakeItem2"},
 			},
 		},
+		{
+			desc: "should work with map[string]any attributes",
+			input: map[string]any{
+				"map": map[string]string{
+					"fakeKey1": "fakeItem1",
+					"fakeKey2": "fakeItem2",
+				},
+			},
+			targetStruct: &struct {
+				Map map[string]any `yaml:"map"`
+			}{},
+			expectedStruct: &struct {
+				Map map[string]any `yaml:"map"`
+			}{
+				Map: map[string]any{
+					"fakeKey1": "fakeItem1",
+					"fakeKey2": "fakeItem2",
+				},
+			},
+		},
 	}
 
 	for _, test := range tests {
