@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	tt "github.com/blackpointcyber/configparser/internal/testtools"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func TestParseYAMLReader(t *testing.T) {

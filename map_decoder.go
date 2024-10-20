@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/vingarcia/structscanner"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // MapTagDecoder can be used to fill a struct with the values of a map.
@@ -14,7 +14,7 @@ import (
 // It works recursively so you can pass nested structs to it.
 type mapTagDecoder struct {
 	tagName   string
-	sourceMap map[any]any
+	sourceMap map[string]any
 }
 
 // newMapTagDecoder returns a new decoder for filling a given struct
@@ -22,7 +22,7 @@ type mapTagDecoder struct {
 //
 // The values from the sourceMap will be mapped to the struct using the key
 // present in the tagName of each field of the struct.
-func newMapTagDecoder(tagName string, sourceMap map[any]any) mapTagDecoder {
+func newMapTagDecoder(tagName string, sourceMap map[string]any) mapTagDecoder {
 	return mapTagDecoder{
 		tagName:   tagName,
 		sourceMap: sourceMap,
@@ -64,7 +64,7 @@ func (e mapTagDecoder) DecodeField(info structscanner.Field) (any, error) {
 		// If it is a struct we keep parsing its fields
 		// just to set the default values if they exist:
 		if info.Kind == reflect.Struct {
-			return newMapTagDecoder(e.tagName, map[any]any{}), nil
+			return newMapTagDecoder(e.tagName, map[string]any{}), nil
 		}
 
 		// If it is not required we can safely ignore it:
@@ -72,7 +72,7 @@ func (e mapTagDecoder) DecodeField(info structscanner.Field) (any, error) {
 	}
 
 	if info.Kind == reflect.Struct {
-		nestedMap, ok := e.sourceMap[key].(map[any]any)
+		nestedMap, ok := e.sourceMap[key].(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf(
 				"can't map %T into nested struct %s of type %v",

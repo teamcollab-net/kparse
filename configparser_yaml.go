@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/vingarcia/structscanner"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func MustParseYAMLFile(filepath string, targetStruct any) {
@@ -54,7 +54,7 @@ func MustParseYAMLFromReader(file io.Reader, targetStruct any) {
 }
 
 func ParseYAMLFromReader(file io.Reader, targetStruct any) error {
-	var parsedYaml map[any]any
+	var parsedYaml map[string]any
 	err := yaml.NewDecoder(file).Decode(&parsedYaml)
 	if err != nil {
 		return err
