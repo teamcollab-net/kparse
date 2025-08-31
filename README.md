@@ -1,4 +1,4 @@
-# ConfigParser
+# KParse
 
 This project was created for filling a gap I found on the existing
 Golang ecosystem: There was no simple library that did the parsing of encoded data,
