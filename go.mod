@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/stretchr/testify v1.8.1
-	github.com/vingarcia/structscanner v0.0.0-20230222030335-e96b18a3c511
+	github.com/vingarcia/structi v0.0.0-20250209185105-e593d3538bd5
 	gopkg.in/yaml.v3 v3.0.1
 )
 

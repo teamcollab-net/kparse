@@ -5,85 +5,77 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/vingarcia/structscanner"
+	"github.com/vingarcia/structi"
 	"gopkg.in/yaml.v3"
 )
 
-// MapTagDecoder can be used to fill a struct with the values of a map.
+// parseFromMap can be used to fill a struct with the values of a map.
 //
 // It works recursively so you can pass nested structs to it.
-type mapTagDecoder struct {
-	tagName   string
-	sourceMap map[string]any
-}
-
-// newMapTagDecoder returns a new decoder for filling a given struct
-// with the values from the sourceMap argument.
-//
-// The values from the sourceMap will be mapped to the struct using the key
-// present in the tagName of each field of the struct.
-func newMapTagDecoder(tagName string, sourceMap map[string]any) mapTagDecoder {
-	return mapTagDecoder{
-		tagName:   tagName,
-		sourceMap: sourceMap,
-	}
-}
-
-// DecodeField implements the TagDecoder interface
-func (e mapTagDecoder) DecodeField(info structscanner.Field) (any, error) {
-	// Ignore multiples fields if there is a `,` as in `json:"foo,omitempty"`
-	key := strings.SplitN(info.Tags[e.tagName], ",", 2)[0]
-
-	required := false
-	if info.Tags["validate"] != "" {
-		validations := strings.Split(info.Tags["validate"], ",")
-		if validations[0] != "required" {
-			return nil, fmt.Errorf(
-				"unrecognized validation: '%s' on struct field: '%s'",
-				validations[0], info.Name,
-			)
+func parseFromMap(tagName string, structPtr any, sourceMap map[string]any) error {
+	return structi.ForEach(structPtr, func(field structi.Field) error {
+		// Ignore multiples fields if there is a `,` as in `json:"foo,omitempty"`
+		key := strings.SplitN(field.Tags[tagName], ",", 2)[0]
+		if key == "" {
+			return nil
 		}
 
-		required = true
-	}
+		required := false
+		if field.Tags["validate"] != "" {
+			validations := strings.Split(field.Tags["validate"], ",")
+			if validations[0] != "required" {
+				return fmt.Errorf(
+					"unrecognized validation: '%s' on struct field: '%s'",
+					validations[0], field.Name,
+				)
+			}
 
-	if e.sourceMap[key] == nil {
-		defaultYAML := info.Tags["default"]
-		if defaultYAML != "" {
-			value := reflect.New(info.Type)
-			return value.Interface(), yaml.Unmarshal([]byte(defaultYAML), value.Interface())
+			required = true
 		}
 
-		if required {
-			return nil, fmt.Errorf(
-				"missing required config field '%s' of type %v",
-				key, info.Type,
-			)
+		if sourceMap[key] == nil {
+			defaultYAML := field.Tags["default"]
+			if defaultYAML != "" {
+				value := reflect.New(field.Type)
+				err := yaml.Unmarshal([]byte(defaultYAML), value.Interface())
+				if err != nil {
+					return fmt.Errorf(`error parsing "default" value as YAML: %s`, err)
+				}
+
+				return field.Set(value)
+			}
+
+			if required {
+				return fmt.Errorf(
+					"missing required config field '%s' of type %v",
+					key, field.Type,
+				)
+			}
+
+			// If it is a struct we keep parsing its fields
+			// just to set the default values if they exist:
+			if field.Kind == reflect.Struct {
+				return parseFromMap(tagName, field.Value, map[string]any{})
+			}
+
+			// If it is not required we can safely ignore it:
+			return nil
 		}
 
-		// If it is a struct we keep parsing its fields
-		// just to set the default values if they exist:
-		if info.Kind == reflect.Struct {
-			return newMapTagDecoder(e.tagName, map[string]any{}), nil
+		if field.Kind == reflect.Struct {
+			nestedMap, ok := sourceMap[key].(map[string]any)
+			if !ok {
+				return fmt.Errorf(
+					"can't map %T into nested struct %s of type %v",
+					sourceMap[key], field.Name, field.Type,
+				)
+			}
+
+			// By returning a decoder you tell the library to run
+			// it recursively on this nestedMap:
+			return parseFromMap(tagName, field.Value, nestedMap)
 		}
 
-		// If it is not required we can safely ignore it:
-		return nil, nil
-	}
-
-	if info.Kind == reflect.Struct {
-		nestedMap, ok := e.sourceMap[key].(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf(
-				"can't map %T into nested struct %s of type %v",
-				e.sourceMap[key], info.Name, info.Type,
-			)
-		}
-
-		// By returning a decoder you tell the library to run
-		// it recursively on this nestedMap:
-		return newMapTagDecoder(e.tagName, nestedMap), nil
-	}
-
-	return e.sourceMap[key], nil
+		return field.Set(sourceMap[key])
+	})
 }

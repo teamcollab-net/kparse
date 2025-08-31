@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	tt "github.com/vingarcia/kparser/internal/testtools"
-	"github.com/vingarcia/structscanner"
 )
 
 func TestMapTagDecoder(t *testing.T) {
@@ -18,7 +17,7 @@ func TestMapTagDecoder(t *testing.T) {
 				Country string `map:"country"`
 			} `map:"address"`
 		}
-		err := structscanner.Decode(&user, newMapTagDecoder("map", map[string]any{
+		err := parseFromMap("map", &user, map[string]any{
 			"id":       42,
 			"username": "fakeUsername",
 			"address": map[string]any{
@@ -26,7 +25,7 @@ func TestMapTagDecoder(t *testing.T) {
 				"city":    "fakeCity",
 				"country": "fakeCountry",
 			},
-		}))
+		})
 		tt.AssertNoErr(t, err)
 
 		tt.AssertEqual(t, user.ID, 42)
@@ -46,11 +45,11 @@ func TestMapTagDecoder(t *testing.T) {
 				Country string `map:"country"`
 			} `map:"address"`
 		}
-		err := structscanner.Decode(&user, newMapTagDecoder("map", map[string]any{
+		err := parseFromMap("map", &user, map[string]any{
 			"id":       42,
 			"username": "fakeUsername",
 			"address":  "notAMap",
-		}))
+		})
 
 		tt.AssertErrContains(t, err, "string", "Address", "Street", "City", "Country")
 	})
@@ -79,13 +78,13 @@ func TestMapTagDecoder(t *testing.T) {
 			user.ID = 43
 			user.Address.Country = "presetCountry"
 
-			err := structscanner.Decode(&user, newMapTagDecoder("map", map[string]any{
+			err := parseFromMap("map", &user, map[string]any{
 				"id": 44,
 				"address": map[string]any{
 					"city":    "fakeCity",
 					"country": "fakeCountry",
 				},
-			}))
+			})
 			tt.AssertNoErr(t, err)
 
 			tt.AssertEqual(t, user.ID, 44)
@@ -147,7 +146,7 @@ func TestMapTagDecoder(t *testing.T) {
 							Country string `map:"country"`
 						} `map:"address" validate:"required"`
 					}
-					err := structscanner.Decode(&user, newMapTagDecoder("map", test.input))
+					err := parseFromMap("map", &user, test.input)
 
 					tt.AssertErrContains(t, err, test.expectErrToContain...)
 				})
@@ -159,10 +158,10 @@ func TestMapTagDecoder(t *testing.T) {
 				ID       int    `map:"id"`
 				Username string `map:"username" validate:"not_required"`
 			}
-			err := structscanner.Decode(&user, newMapTagDecoder("map", map[string]any{
+			err := parseFromMap("map", &user, map[string]any{
 				"id":       42,
 				"username": "fakeUsername",
-			}))
+			})
 
 			tt.AssertErrContains(t, err, "validation", "not_required")
 		})
@@ -172,9 +171,9 @@ func TestMapTagDecoder(t *testing.T) {
 				ID       int    `map:"id"`
 				Username string `map:"username" validate:"required" default:"defaultUsername"`
 			}
-			err := structscanner.Decode(&user, newMapTagDecoder("map", map[string]any{
+			err := parseFromMap("map", &user, map[string]any{
 				"id": 42,
-			}))
+			})
 			tt.AssertNoErr(t, err)
 
 			tt.AssertEqual(t, user.ID, 42)
@@ -205,13 +204,13 @@ func TestMapTagDecoder(t *testing.T) {
 			user.Username = "presetUsername"
 			user.Address.Street = "presetStreet"
 
-			err := structscanner.Decode(&user, newMapTagDecoder("map", map[string]any{
+			err := parseFromMap("map", &user, map[string]any{
 				"id": 44,
 				"address": map[string]any{
 					"city":    "fakeCity",
 					"country": "fakeCountry",
 				},
-			}))
+			})
 			tt.AssertNoErr(t, err)
 
 			tt.AssertEqual(t, user.ID, 44)
@@ -249,10 +248,10 @@ func TestMapTagDecoder(t *testing.T) {
 					Slice []string `map:"slice"`
 				}
 
-				err := structscanner.Decode(&user, newMapTagDecoder("map", map[string]any{
+				err := parseFromMap("map", &user, map[string]any{
 					"id":    42,
 					"slice": test.inputSlice,
-				}))
+				})
 				tt.AssertNoErr(t, err)
 
 				tt.AssertEqual(t, user.ID, 42)

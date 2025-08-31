@@ -7,8 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-
-	"github.com/vingarcia/structscanner"
 )
 
 func MustParseJSONFile(filepath string, targetStruct any) {
@@ -57,14 +55,11 @@ func MustParseJSONFromReader(file io.Reader, targetStruct any) {
 }
 
 func ParseJSONFromReader(file io.Reader, targetStruct any) error {
-	var parsedJson map[string]any
-	err := json.NewDecoder(file).Decode(&parsedJson)
+	var data map[string]any
+	err := json.NewDecoder(file).Decode(&data)
 	if err != nil {
 		return err
 	}
 
-	return structscanner.Decode(
-		targetStruct,
-		newMapTagDecoder("json", parsedJson),
-	)
+	return parseFromMap("json", targetStruct, data)
 }

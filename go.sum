@@ -10,8 +10,8 @@ github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
-github.com/vingarcia/structscanner v0.0.0-20230222030335-e96b18a3c511 h1:iJu7NIPcyn/2u8Y30YrTUb9WnnEFsGcUHTvA+a/fg/8=
-github.com/vingarcia/structscanner v0.0.0-20230222030335-e96b18a3c511/go.mod h1:G5dT9Kd4wAoNoiWV9ybAv++M8e3OhVc1yMuHc8gVk38=
+github.com/vingarcia/structi v0.0.0-20250209185105-e593d3538bd5 h1:PeEPNC4z4Pj6l8YZKgWcg7PujQZufljip/zg0pskhTI=
+github.com/vingarcia/structi v0.0.0-20250209185105-e593d3538bd5/go.mod h1:pr/474QaNc5OgmE/C1dGQLx4PGYzu3SamvOJUq4jp1A=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
