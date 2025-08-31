@@ -3,7 +3,7 @@ package kparse
 import (
 	"testing"
 
-	tt "github.com/vingarcia/kparse/internal/testtools"
+	tt "github.com/teamcollab-net/kparse/internal/testtools"
 )
 
 func TestMapTagDecoder(t *testing.T) {

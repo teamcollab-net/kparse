@@ -1,4 +1,4 @@
-module github.com/vingarcia/kparse
+module github.com/teamcollab-net/kparse
 
 go 1.22
 

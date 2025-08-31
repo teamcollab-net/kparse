@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	tt "github.com/vingarcia/kparse/internal/testtools"
+	tt "github.com/teamcollab-net/kparse/internal/testtools"
 )
 
 func TestParseJSONReader(t *testing.T) {

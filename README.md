@@ -28,7 +28,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/vingarcia/kparse"
+	"github.com/teamcollab-net/kparse"
 )
 
 func main() {
