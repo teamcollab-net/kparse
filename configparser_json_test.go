@@ -1,10 +1,10 @@
-package kparser
+package kparse
 
 import (
 	"encoding/json"
 	"testing"
 
-	tt "github.com/vingarcia/kparser/internal/testtools"
+	tt "github.com/vingarcia/kparse/internal/testtools"
 )
 
 func TestParseJSONReader(t *testing.T) {

@@ -1,4 +1,4 @@
-package kparser
+package kparse
 
 import (
 	"bytes"

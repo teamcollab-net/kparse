@@ -1,9 +1,9 @@
-package kparser
+package kparse
 
 import (
 	"testing"
 
-	tt "github.com/vingarcia/kparser/internal/testtools"
+	tt "github.com/vingarcia/kparse/internal/testtools"
 )
 
 func TestMapTagDecoder(t *testing.T) {
