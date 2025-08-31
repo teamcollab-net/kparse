@@ -1,9 +1,9 @@
-package configparser
+package kparser
 
 import (
 	"testing"
 
-	tt "github.com/blackpointcyber/configparser/internal/testtools"
+	tt "github.com/vingarcia/kparser/internal/testtools"
 	"github.com/vingarcia/structscanner"
 )
 

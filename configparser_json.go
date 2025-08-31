@@ -1,8 +1,9 @@
-package configparser
+package kparser
 
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -17,7 +18,7 @@ func MustParseJSONFile(filepath string, targetStruct any) {
 	}
 }
 
-func ParseJSONFile(path string, targetStruct any) error {
+func ParseJSONFile(path string, targetStruct any) (err error) {
 	if !filepath.IsAbs(path) {
 		workingDir, err := os.Getwd()
 		if err != nil {
@@ -30,8 +31,10 @@ func ParseJSONFile(path string, targetStruct any) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		err = errors.Join(err, file.Close())
+	}()
 
-	defer file.Close()
 	return ParseJSONFromReader(file, targetStruct)
 }
 

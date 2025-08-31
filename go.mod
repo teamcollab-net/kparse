@@ -1,4 +1,4 @@
-module github.com/blackpointcyber/configparser
+module github.com/vingarcia/kparser
 
 go 1.22
 

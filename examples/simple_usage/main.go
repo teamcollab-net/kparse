@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/blackpointcyber/configparser"
+	"github.com/vingarcia/kparser"
 )
 
 func main() {
@@ -18,7 +18,7 @@ func main() {
 		} `yaml:"address"`
 	}
 
-	configparser.MustParseYAMLFile("./examples/simple_usage/config.yaml", &config)
+	kparser.MustParseYAMLFile("./examples/simple_usage/config.yaml", &config)
 
 	fmt.Println(config)
 }

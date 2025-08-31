@@ -1,10 +1,10 @@
-package configparser
+package kparser
 
 import (
 	"encoding/json"
 	"testing"
 
-	tt "github.com/blackpointcyber/configparser/internal/testtools"
+	tt "github.com/vingarcia/kparser/internal/testtools"
 )
 
 func TestParseJSONReader(t *testing.T) {

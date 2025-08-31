@@ -1,4 +1,4 @@
-package configparser
+package kparser
 
 import (
 	"fmt"

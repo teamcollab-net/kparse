@@ -1,7 +1,8 @@
-package configparser
+package kparser
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -17,7 +18,7 @@ func MustParseYAMLFile(filepath string, targetStruct any) {
 	}
 }
 
-func ParseYAMLFile(path string, targetStruct any) error {
+func ParseYAMLFile(path string, targetStruct any) (err error) {
 	if !filepath.IsAbs(path) {
 		workingDir, err := os.Getwd()
 		if err != nil {
@@ -30,8 +31,10 @@ func ParseYAMLFile(path string, targetStruct any) error {
 	if err != nil {
 		return err
 	}
+	defer func() {
+		err = errors.Join(err, file.Close())
+	}()
 
-	defer file.Close()
 	return ParseYAMLFromReader(file, targetStruct)
 }
 
