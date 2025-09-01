@@ -47,7 +47,7 @@ func parseFromMap(tagName string, structPtr any, sourceMap map[string]any) error
 
 			if required {
 				return fmt.Errorf(
-					"missing required config field '%s' of type %v",
+					"missing required field '%s' of type %v",
 					key, field.Type,
 				)
 			}

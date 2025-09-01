@@ -111,7 +111,7 @@ func TestMapTagDecoder(t *testing.T) {
 							"country": "fakeCountry",
 						},
 					},
-					expectErrToContain: []string{"missing", "required", "config", "username"},
+					expectErrToContain: []string{"missing", "required", "username"},
 				},
 				{
 					desc: "required field missing on nested map",
@@ -123,7 +123,7 @@ func TestMapTagDecoder(t *testing.T) {
 							"country": "fakeCountry",
 						},
 					},
-					expectErrToContain: []string{"missing", "required", "config", "street"},
+					expectErrToContain: []string{"missing", "required", "street"},
 				},
 				{
 					desc: "required field missing is a map",
@@ -131,7 +131,7 @@ func TestMapTagDecoder(t *testing.T) {
 						"id":       42,
 						"username": "fakeUsername",
 					},
-					expectErrToContain: []string{"missing", "required", "config", "address"},
+					expectErrToContain: []string{"missing", "required", "address"},
 				},
 			}
 

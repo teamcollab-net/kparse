@@ -4,7 +4,7 @@ This project was created for filling a gap I found on the existing
 Golang ecosystem: There was no simple library that did the parsing of encoded data,
 validation of required fields and allowed for default values at the same time.
 
-The project currently supports JSON and YAML config files.
+The project currently supports JSON and YAML files.
 
 For each encoding type there are a few different options on how to
 receive the data, for YAML for example we have:
