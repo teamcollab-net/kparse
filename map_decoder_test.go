@@ -377,6 +377,104 @@ func TestMapTagDecoder(t *testing.T) {
 						"float64": testDecoder(50.5),
 					},
 				},
+				{
+					desc: "min/max should correctly return error for different types of numbers",
+					structPtr: &struct {
+						IntBelowMin   int   `map:"intBelowMin" validate:"min=100"`
+						Int8BelowMin  int8  `map:"int8BelowMin" validate:"min=100"`
+						Int16BelowMin int16 `map:"int16BelowMin" validate:"min=100"`
+						Int32BelowMin int32 `map:"int32BelowMin" validate:"min=100"`
+						Int64BelowMin int64 `map:"int64BelowMin" validate:"min=100"`
+
+						IntAboveMax   int   `map:"intAboveMax" validate:"max=10"`
+						Int8AboveMax  int8  `map:"int8AboveMax" validate:"max=10"`
+						Int16AboveMax int16 `map:"int16AboveMax" validate:"max=10"`
+						Int32AboveMax int32 `map:"int32AboveMax" validate:"max=10"`
+						Int64AboveMax int64 `map:"int64AboveMax" validate:"max=10"`
+
+						UintBelowMin   uint   `map:"uintBelowMin" validate:"min=100"`
+						Uint8BelowMin  uint8  `map:"uint8BelowMin" validate:"min=100"`
+						Uint16BelowMin uint16 `map:"uint16BelowMin" validate:"min=100"`
+						Uint32BelowMin uint32 `map:"uint32BelowMin" validate:"min=100"`
+						Uint64BelowMin uint64 `map:"uint64BelowMin" validate:"min=100"`
+
+						UintAboveMax   uint   `map:"uintAboveMax" validate:"max=10"`
+						Uint8AboveMax  uint8  `map:"uint8AboveMax" validate:"max=10"`
+						Uint16AboveMax uint16 `map:"uint16AboveMax" validate:"max=10"`
+						Uint32AboveMax uint32 `map:"uint32AboveMax" validate:"max=10"`
+						Uint64AboveMax uint64 `map:"uint64AboveMax" validate:"max=10"`
+
+						Float32BelowMin float32 `map:"float32BelowMin" validate:"min=100.5"`
+						Float64BelowMin float64 `map:"float64BelowMin" validate:"min=100.5"`
+
+						Float32AboveMax float32 `map:"float32AboveMax" validate:"max=10.5"`
+						Float64AboveMax float64 `map:"float64AboveMax" validate:"max=10.5"`
+
+						//Complex64  complex64  `map:"complex64" validate:"min=0.5,max=100.5"`
+						//Complex128 complex128 `map:"complex128" validate:"min=0.5,max=100.5"`
+					}{},
+					sourceMap: map[string]LazyDecoder{
+						"intBelowMin":   testDecoder(50),
+						"int8BelowMin":  testDecoder(50),
+						"int16BelowMin": testDecoder(50),
+						"int32BelowMin": testDecoder(50),
+						"int64BelowMin": testDecoder(50),
+
+						"intAboveMax":   testDecoder(50),
+						"int8AboveMax":  testDecoder(50),
+						"int16AboveMax": testDecoder(50),
+						"int32AboveMax": testDecoder(50),
+						"int64AboveMax": testDecoder(50),
+
+						"uintBelowMin":   testDecoder(50),
+						"uint8BelowMin":  testDecoder(50),
+						"uint16BelowMin": testDecoder(50),
+						"uint32BelowMin": testDecoder(50),
+						"uint64BelowMin": testDecoder(50),
+
+						"uintAboveMax":   testDecoder(50),
+						"uint8AboveMax":  testDecoder(50),
+						"uint16AboveMax": testDecoder(50),
+						"uint32AboveMax": testDecoder(50),
+						"uint64AboveMax": testDecoder(50),
+
+						"float32BelowMin": testDecoder(50.5),
+						"float64BelowMin": testDecoder(50.5),
+
+						"float32AboveMax": testDecoder(50.5),
+						"float64AboveMax": testDecoder(50.5),
+					},
+					expectErrToContain: []string{
+						"IntBelowMin",
+						"Int8BelowMin",
+						"Int16BelowMin",
+						"Int32BelowMin",
+						"Int64BelowMin",
+
+						"IntAboveMax",
+						"Int8AboveMax",
+						"Int16AboveMax",
+						"Int32AboveMax",
+						"Int64AboveMax",
+
+						"UintBelowMin",
+						"Uint8BelowMin",
+						"Uint16BelowMin",
+						"Uint32BelowMin",
+						"Uint64BelowMin",
+
+						"UintAboveMax",
+						"Uint8AboveMax",
+						"Uint16AboveMax",
+						"Uint32AboveMax",
+						"Uint64AboveMax",
+
+						"Float32BelowMin",
+						"Float64BelowMin",
+						"Float32AboveMax",
+						"Float64AboveMax",
+					},
+				},
 			}
 
 			for _, test := range tests {

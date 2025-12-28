@@ -17,14 +17,10 @@ type Validator func(value any) error
 // parseFromMap can be used to fill a struct with the values of a map.
 //
 // It works recursively so you can pass nested structs to it.
-func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecoder) error {
+func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecoder) (errs error) {
 	structType := reflect.TypeOf(structPtr)
-	if structType.Kind() != reflect.Pointer {
-		return fmt.Errorf("expected pointer to struct but got: %+v", structPtr)
-	}
-	structType = structType.Elem()
 
-	return structi.ForEach(structPtr, func(field structi.Field) error {
+	err := structi.ForEach(structPtr, func(field structi.Field) error {
 		// Ignore multiples fields if there is a `,` as in `json:"foo,omitempty"`
 		key := strings.SplitN(field.Tags[tagName], ",", 2)[0]
 		if key == "" {
@@ -115,13 +111,14 @@ func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecode
 		}
 
 		// Run the validations only after decoding the value:
-		var errs error
 		for _, validation := range validations {
 			errs = errors.Join(errs, validation(field.Value))
 		}
 
-		return errs
+		return nil
 	})
+
+	return errors.Join(err, errs)
 }
 
 type cacheKey struct {
@@ -327,7 +324,7 @@ func newFloatRangeValidator[T Float](fieldName string, minStr string, maxStr str
 	}
 
 	if maxStr != "" {
-		max, err = strconv.ParseFloat(minStr, 64)
+		max, err = strconv.ParseFloat(maxStr, 64)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse max value for field %q: %q is not a valid float", fieldName, maxStr)
 		}
