@@ -56,7 +56,7 @@ func MustParseYAMLFromReader(file io.Reader, targetStruct any) {
 }
 
 func ParseYAMLFromReader(file io.Reader, targetStruct any) error {
-	var data map[string]any
+	var data map[string]LazyDecoder
 	err := yaml.NewDecoder(file).Decode(&data)
 	if err != nil {
 		return err

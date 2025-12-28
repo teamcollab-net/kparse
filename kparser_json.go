@@ -55,7 +55,7 @@ func MustParseJSONFromReader(file io.Reader, targetStruct any) {
 }
 
 func ParseJSONFromReader(file io.Reader, targetStruct any) error {
-	var data map[string]any
+	var data map[string]LazyDecoder
 	err := json.NewDecoder(file).Decode(&data)
 	if err != nil {
 		return err
