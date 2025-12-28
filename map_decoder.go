@@ -212,9 +212,6 @@ func parseRangeValidationWithCache(
 			return nil, err
 		}
 
-	case reflect.Complex64, reflect.Complex128:
-		return nil, fmt.Errorf("support for complex is not yet implemented")
-
 	default:
 		return nil, fmt.Errorf("invalid field type for min/max validations: %v", fieldType)
 	}

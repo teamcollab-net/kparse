@@ -356,9 +356,6 @@ func TestMapTagDecoder(t *testing.T) {
 
 						Float32 float32 `map:"float32" validate:"min=0.5,max=100.5"`
 						Float64 float64 `map:"float64" validate:"min=0.5,max=100.5"`
-
-						//Complex64  complex64  `map:"complex64" validate:"min=0.5,max=100.5"`
-						//Complex128 complex128 `map:"complex128" validate:"min=0.5,max=100.5"`
 					}{},
 					sourceMap: map[string]LazyDecoder{
 						"int":   testDecoder(50),
@@ -409,9 +406,6 @@ func TestMapTagDecoder(t *testing.T) {
 
 						Float32AboveMax float32 `map:"float32AboveMax" validate:"max=10.5"`
 						Float64AboveMax float64 `map:"float64AboveMax" validate:"max=10.5"`
-
-						//Complex64  complex64  `map:"complex64" validate:"min=0.5,max=100.5"`
-						//Complex128 complex128 `map:"complex128" validate:"min=0.5,max=100.5"`
 					}{},
 					sourceMap: map[string]LazyDecoder{
 						"intBelowMin":   testDecoder(50),
