@@ -203,8 +203,17 @@ func parseRangeValidationWithCache(
 			return nil, err
 		}
 
-	case reflect.Float32, reflect.Float64:
-		return nil, fmt.Errorf("support for float is not yet implemented")
+	case reflect.Float32:
+		fn, err = newFloatRangeValidator[float32](fieldName, minStr, maxStr)
+		if err != nil {
+			return nil, err
+		}
+
+	case reflect.Float64:
+		fn, err = newFloatRangeValidator[float64](fieldName, minStr, maxStr)
+		if err != nil {
+			return nil, err
+		}
 
 	case reflect.Complex64, reflect.Complex128:
 		return nil, fmt.Errorf("support for complex is not yet implemented")
@@ -218,7 +227,7 @@ func parseRangeValidationWithCache(
 	return fn, nil
 }
 
-func newIntRangeValidator[T Integer](fieldName string, minStr string, maxStr string) (_ Validator, err error) {
+func newIntRangeValidator[T Signed](fieldName string, minStr string, maxStr string) (_ Validator, err error) {
 	var min, max int64
 	if minStr != "" {
 		min, err = strconv.ParseInt(minStr, 10, 64)
@@ -263,7 +272,7 @@ func newIntRangeValidator[T Integer](fieldName string, minStr string, maxStr str
 	}, nil
 }
 
-func newUintRangeValidator[T Integer](fieldName string, minStr string, maxStr string) (_ Validator, err error) {
+func newUintRangeValidator[T Unsigned](fieldName string, minStr string, maxStr string) (_ Validator, err error) {
 	var min, max uint64
 	if minStr != "" {
 		min, err = strconv.ParseUint(minStr, 10, 64)
@@ -300,6 +309,51 @@ func newUintRangeValidator[T Integer](fieldName string, minStr string, maxStr st
 		if maxStr != "" && intValue > max {
 			return fmt.Errorf(
 				"field %q with value %d is above the max value of %d",
+				fieldName, intValue, max,
+			)
+		}
+
+		return nil
+	}, nil
+}
+
+func newFloatRangeValidator[T Float](fieldName string, minStr string, maxStr string) (_ Validator, err error) {
+	var min, max float64
+	if minStr != "" {
+		min, err = strconv.ParseFloat(minStr, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse min value for field %q: %q is not a valid float", fieldName, minStr)
+		}
+	}
+
+	if maxStr != "" {
+		max, err = strconv.ParseFloat(minStr, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse max value for field %q: %q is not a valid float", fieldName, maxStr)
+		}
+	}
+
+	return func(value any) error {
+		v, ok := value.(*T)
+		if !ok {
+			return fmt.Errorf("kparser code error: float validator called for wrong type: %T", value)
+		}
+		if v == nil {
+			return nil
+		}
+
+		intValue := float64(*v)
+
+		if minStr != "" && intValue < min {
+			return fmt.Errorf(
+				"field %q with value %f is below the min value of %f",
+				fieldName, intValue, min,
+			)
+		}
+
+		if maxStr != "" && intValue > max {
+			return fmt.Errorf(
+				"field %q with value %f is above the max value of %f",
 				fieldName, intValue, max,
 			)
 		}
