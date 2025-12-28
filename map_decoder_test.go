@@ -196,13 +196,7 @@ func TestMapTagDecoder(t *testing.T) {
 			})
 		})
 
-		t.Run("validate min, max and range", func(t *testing.T) {
-			type Employee struct {
-				Salary     int `map:"salary" validate:"min=1000"`
-				AgeInYears int `map:"age" validate:"max=100"`
-				HeightInCm int `map:"height" validate:"range=140:230"`
-			}
-
+		t.Run("validate min and max", func(t *testing.T) {
 			tests := []struct {
 				desc               string
 				structPtr          any
@@ -210,8 +204,12 @@ func TestMapTagDecoder(t *testing.T) {
 				expectErrToContain []string
 			}{
 				{
-					desc:      "should allow values in range",
-					structPtr: &Employee{},
+					desc: "should allow values in range",
+					structPtr: &struct {
+						Salary     int `map:"salary" validate:"min=1000"`
+						AgeInYears int `map:"age" validate:"max=100"`
+						HeightInCm int `map:"height" validate:"min=140,max=230"`
+					}{},
 					sourceMap: map[string]LazyDecoder{
 						"salary": testDecoder(2000),
 						"age":    testDecoder(45),
@@ -219,44 +217,84 @@ func TestMapTagDecoder(t *testing.T) {
 					},
 				},
 				{
-					desc:      "should block if value below minimum",
-					structPtr: &Employee{},
+					desc: "should block if value below minimum",
+					structPtr: &struct {
+						ValidBefore int `map:"before" validate:"max=100"`
+						BelowMin    int `map:"belowMin" validate:"min=1000"`
+						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+					}{},
 					sourceMap: map[string]LazyDecoder{
-						"salary": testDecoder(500),
-						"age":    testDecoder(45),
-						"height": testDecoder(179),
+						"before":   testDecoder(45),
+						"belowMin": testDecoder(500),
+						"after":    testDecoder(178),
 					},
-					expectErrToContain: []string{"Salary", "min", "1000"},
+					expectErrToContain: []string{"BelowMin", "min", "500", "1000"},
 				},
 				{
-					desc:      "should block if value above maximum",
-					structPtr: &Employee{},
+					desc: "should block if value above maximum",
+					structPtr: &struct {
+						ValidBefore int `map:"before" validate:"max=100"`
+						AboveMax    int `map:"aboveMax" validate:"max=100"`
+						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+					}{},
 					sourceMap: map[string]LazyDecoder{
-						"salary": testDecoder(2000),
-						"age":    testDecoder(145),
-						"height": testDecoder(179),
+						"before":   testDecoder(45),
+						"aboveMax": testDecoder(500),
+						"after":    testDecoder(178),
 					},
-					expectErrToContain: []string{"Age", "max", "100"},
+					expectErrToContain: []string{"AboveMax", "max", "500", "100"},
 				},
 				{
-					desc:      "should block if value below range",
-					structPtr: &Employee{},
+					desc: "should not fail the validation if value is missing",
+					structPtr: &struct {
+						ValidBefore  int `map:"before" validate:"max=100"`
+						MissingValue int `map:"missing" validate:"max=100"`
+						ValidAfter   int `map:"after" validate:"min=140,max=230"`
+					}{},
 					sourceMap: map[string]LazyDecoder{
-						"salary": testDecoder(2000),
-						"age":    testDecoder(45),
-						"height": testDecoder(90),
+						"before": testDecoder(45),
+						"after":  testDecoder(178),
 					},
-					expectErrToContain: []string{"Height", "below", "min", "140", "90"},
 				},
 				{
-					desc:      "should block if value above range",
-					structPtr: &Employee{},
+					desc: "should not conflict with the required validation when field when all is valid",
+					structPtr: &struct {
+						ValidBefore int `map:"before" validate:"max=100"`
+						Required    int `map:"required" validate:"required,max=100"`
+						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+					}{},
 					sourceMap: map[string]LazyDecoder{
-						"salary": testDecoder(2000),
-						"age":    testDecoder(45),
-						"height": testDecoder(260),
+						"before":   testDecoder(45),
+						"required": testDecoder(50),
+						"after":    testDecoder(178),
 					},
-					expectErrToContain: []string{"Height", "above", "max", "230", "260"},
+				},
+				{
+					desc: "should not conflict with the required validation when field is missing",
+					structPtr: &struct {
+						ValidBefore int `map:"before" validate:"max=100"`
+						Required    int `map:"required" validate:"required,max=100"`
+						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+					}{},
+					sourceMap: map[string]LazyDecoder{
+						"before": testDecoder(45),
+						"after":  testDecoder(178),
+					},
+					expectErrToContain: []string{"missing", "required"},
+				},
+				{
+					desc: "should not conflict with the required validation when field is not in range",
+					structPtr: &struct {
+						ValidBefore int `map:"before" validate:"max=100"`
+						Required    int `map:"required" validate:"required,max=100"`
+						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+					}{},
+					sourceMap: map[string]LazyDecoder{
+						"before":   testDecoder(45),
+						"required": testDecoder(120), // not in range
+						"after":    testDecoder(178),
+					},
+					expectErrToContain: []string{"Required", "above", "max"},
 				},
 			}
 

@@ -43,7 +43,7 @@ func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecode
 					required = true
 
 				case "min":
-					validation, err := parseRangeValidationWithCache(structType, field.Name, field.Type, value+":")
+					validation, err := parseRangeValidationWithCache(structType, field.Name, field.Type, value, "")
 					if err != nil {
 						return fmt.Errorf("error parsing `min` validator: %w", err)
 					}
@@ -51,17 +51,9 @@ func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecode
 					validations = append(validations, validation)
 
 				case "max":
-					validation, err := parseRangeValidationWithCache(structType, field.Name, field.Type, ":"+value)
+					validation, err := parseRangeValidationWithCache(structType, field.Name, field.Type, "", value)
 					if err != nil {
 						return fmt.Errorf("error parsing `max` validator: %w", err)
-					}
-
-					validations = append(validations, validation)
-
-				case "range":
-					validation, err := parseRangeValidationWithCache(structType, field.Name, field.Type, value)
-					if err != nil {
-						return fmt.Errorf("error parsing `range` validator: %w", err)
 					}
 
 					validations = append(validations, validation)
@@ -140,12 +132,17 @@ type cacheKey struct {
 
 var rangeValidatorCache sync.Map
 
-func parseRangeValidationWithCache(structType reflect.Type, fieldName string, fieldType reflect.Type, value string) (fn Validator, err error) {
+func parseRangeValidationWithCache(
+	structType reflect.Type,
+	fieldName string,
+	fieldType reflect.Type,
+	minStr string,
+	maxStr string,
+) (fn Validator, err error) {
 	if v, _ := rangeValidatorCache.Load(cacheKey{t: structType, name: fieldName}); v != nil {
 		return v.(Validator), nil
 	}
 
-	minStr, maxStr, _ := strings.Cut(value, ":")
 	switch fieldType.Kind() {
 	case reflect.Int:
 		fn, err = newIntRangeValidator[int](fieldName, minStr, maxStr)
@@ -187,7 +184,7 @@ func parseRangeValidationWithCache(structType reflect.Type, fieldName string, fi
 		return nil, fmt.Errorf("support for complex is not yet implemented")
 
 	default:
-		return nil, fmt.Errorf("invalid field type for min, max and range validations: %v", fieldType)
+		return nil, fmt.Errorf("invalid field type for min/max validations: %v", fieldType)
 	}
 
 	rangeValidatorCache.Store(cacheKey{t: structType, name: fieldName}, fn)
