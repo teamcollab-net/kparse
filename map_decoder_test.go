@@ -196,7 +196,7 @@ func TestMapTagDecoder(t *testing.T) {
 			})
 		})
 
-		t.Run("validate min and max", func(t *testing.T) {
+		t.Run("logical validations", func(t *testing.T) {
 			tests := []struct {
 				desc               string
 				structPtr          any
@@ -295,6 +295,49 @@ func TestMapTagDecoder(t *testing.T) {
 						"after":    testDecoder(178),
 					},
 					expectErrToContain: []string{"Required", "above", "max"},
+				},
+				{
+					desc: "should work for negative fields",
+					structPtr: &struct {
+						ValidBefore int `map:"before" validate:"max=100"`
+						MinNegative int `map:"minNegative" validate:"min=-10"`
+						MaxNegative int `map:"maxNegative" validate:"max=-10"`
+						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+					}{},
+					sourceMap: map[string]LazyDecoder{
+						"before":      testDecoder(45),
+						"minNegative": testDecoder(-5),
+						"maxNegative": testDecoder(-15),
+						"after":       testDecoder(178),
+					},
+				},
+				{
+					desc: "should fail for min out of range on a negative field",
+					structPtr: &struct {
+						ValidBefore int `map:"before" validate:"max=100"`
+						Negative    int `map:"negative" validate:"min=-10"`
+						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+					}{},
+					sourceMap: map[string]LazyDecoder{
+						"before":   testDecoder(45),
+						"negative": testDecoder(-15),
+						"after":    testDecoder(178),
+					},
+					expectErrToContain: []string{"Negative", "below", "min", "-15", "-10"},
+				},
+				{
+					desc: "should fail for max out of range on a negative field",
+					structPtr: &struct {
+						ValidBefore int `map:"before" validate:"max=100"`
+						Negative    int `map:"negative" validate:"max=-10"`
+						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+					}{},
+					sourceMap: map[string]LazyDecoder{
+						"before":   testDecoder(45),
+						"negative": testDecoder(-5),
+						"after":    testDecoder(178),
+					},
+					expectErrToContain: []string{"Negative", "above", "max", "-5", "-10"},
 				},
 			}
 
