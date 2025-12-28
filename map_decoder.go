@@ -1,6 +1,7 @@
 package kparse
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -114,14 +115,12 @@ func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecode
 		}
 
 		// Run the validations only after decoding the value:
+		var errs error
 		for _, validation := range validations {
-			err := validation(field.Value)
-			if err != nil {
-				return err
-			}
+			errs = errors.Join(errs, validation(field.Value))
 		}
 
-		return nil
+		return errs
 	})
 }
 
@@ -174,8 +173,35 @@ func parseRangeValidationWithCache(
 			return nil, err
 		}
 
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
-		return nil, fmt.Errorf("support for unsigned int is not yet implemented")
+	case reflect.Uint:
+		fn, err = newUintRangeValidator[uint](fieldName, minStr, maxStr)
+		if err != nil {
+			return nil, err
+		}
+
+	case reflect.Uint8:
+		fn, err = newUintRangeValidator[uint8](fieldName, minStr, maxStr)
+		if err != nil {
+			return nil, err
+		}
+
+	case reflect.Uint16:
+		fn, err = newUintRangeValidator[uint16](fieldName, minStr, maxStr)
+		if err != nil {
+			return nil, err
+		}
+
+	case reflect.Uint32:
+		fn, err = newUintRangeValidator[uint32](fieldName, minStr, maxStr)
+		if err != nil {
+			return nil, err
+		}
+
+	case reflect.Uint64:
+		fn, err = newUintRangeValidator[uint64](fieldName, minStr, maxStr)
+		if err != nil {
+			return nil, err
+		}
 
 	case reflect.Float32, reflect.Float64:
 		return nil, fmt.Errorf("support for float is not yet implemented")
@@ -218,6 +244,51 @@ func newIntRangeValidator[T Integer](fieldName string, minStr string, maxStr str
 		}
 
 		intValue := int64(*v)
+
+		if minStr != "" && intValue < min {
+			return fmt.Errorf(
+				"field %q with value %d is below the min value of %d",
+				fieldName, intValue, min,
+			)
+		}
+
+		if maxStr != "" && intValue > max {
+			return fmt.Errorf(
+				"field %q with value %d is above the max value of %d",
+				fieldName, intValue, max,
+			)
+		}
+
+		return nil
+	}, nil
+}
+
+func newUintRangeValidator[T Integer](fieldName string, minStr string, maxStr string) (_ Validator, err error) {
+	var min, max uint64
+	if minStr != "" {
+		min, err = strconv.ParseUint(minStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse min value for field %q: %q is not a valid unsigned integer", fieldName, minStr)
+		}
+	}
+
+	if maxStr != "" {
+		max, err = strconv.ParseUint(maxStr, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse max value for field %q: %q is not a valid unsigned integer", fieldName, maxStr)
+		}
+	}
+
+	return func(value any) error {
+		v, ok := value.(*T)
+		if !ok {
+			return fmt.Errorf("kparser code error: unsigned integer validator called for wrong type: %T", value)
+		}
+		if v == nil {
+			return nil
+		}
+
+		intValue := uint64(*v)
 
 		if minStr != "" && intValue < min {
 			return fmt.Errorf(

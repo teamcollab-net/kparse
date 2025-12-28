@@ -339,6 +339,41 @@ func TestMapTagDecoder(t *testing.T) {
 					},
 					expectErrToContain: []string{"Negative", "above", "max", "-5", "-10"},
 				},
+				{
+					desc: "min/max should work for different types of numbers",
+					structPtr: &struct {
+						Int   int   `map:"int" validate:"min=0,max=100"`
+						Int8  int8  `map:"int8" validate:"min=0,max=100"`
+						Int16 int16 `map:"int16" validate:"min=0,max=100"`
+						Int32 int32 `map:"int32" validate:"min=0,max=100"`
+						Int64 int64 `map:"int64" validate:"min=0,max=100"`
+
+						Uint   uint   `map:"uint" validate:"min=0,max=100"`
+						Uint8  uint8  `map:"uint8" validate:"min=0,max=100"`
+						Uint16 uint16 `map:"uint16" validate:"min=0,max=100"`
+						Uint32 uint32 `map:"uint32" validate:"min=0,max=100"`
+						Uint64 uint64 `map:"uint64" validate:"min=0,max=100"`
+
+						//oat32 float32    `map:"float32" validate:"min=0.5,max=100.5"`
+						//oat64 float64    `map:"float64" validate:"min=0.5,max=100.5"`
+
+						//Complex64  complex64  `map:"complex64" validate:"min=0.5,max=100.5"`
+						//mplex128 complex128 `map:"complex128" validate:"min=0.5,max=100.5"`
+					}{},
+					sourceMap: map[string]LazyDecoder{
+						"int":   testDecoder(50),
+						"int8":  testDecoder(50),
+						"int16": testDecoder(50),
+						"int32": testDecoder(50),
+						"int64": testDecoder(50),
+
+						"uint":   testDecoder(50),
+						"uint8":  testDecoder(50),
+						"uint16": testDecoder(50),
+						"uint32": testDecoder(50),
+						"uint64": testDecoder(50),
+					},
+				},
 			}
 
 			for _, test := range tests {
