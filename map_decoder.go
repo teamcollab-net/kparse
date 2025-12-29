@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -168,7 +167,7 @@ type cacheKey struct {
 	name string
 }
 
-var rangeValidatorCache sync.Map
+var validatorCache sync.Map
 
 func parseRangeValidationWithCache(
 	structType reflect.Type,
@@ -177,79 +176,83 @@ func parseRangeValidationWithCache(
 	minStr string,
 	maxStr string,
 ) (fn Validator, err error) {
-	if v, _ := rangeValidatorCache.Load(cacheKey{t: structType, name: fieldName}); v != nil {
+	cacheKey := cacheKey{
+		t:    structType,
+		name: fieldName,
+	}
+	if v, _ := validatorCache.Load(cacheKey); v != nil {
 		return v.(Validator), nil
 	}
 
 	switch fieldType.Kind() {
 	case reflect.Int:
-		fn, err = newIntRangeValidator[int](fieldName, minStr, maxStr)
+		fn, err = newRangeValidator[int](fieldName, minStr, maxStr)
 		if err != nil {
 			return nil, err
 		}
 
 	case reflect.Int8:
-		fn, err = newIntRangeValidator[int8](fieldName, minStr, maxStr)
+		fn, err = newRangeValidator[int8](fieldName, minStr, maxStr)
 		if err != nil {
 			return nil, err
 		}
 
 	case reflect.Int16:
-		fn, err = newIntRangeValidator[int16](fieldName, minStr, maxStr)
+		fn, err = newRangeValidator[int16](fieldName, minStr, maxStr)
 		if err != nil {
 			return nil, err
 		}
 
 	case reflect.Int32:
-		fn, err = newIntRangeValidator[int32](fieldName, minStr, maxStr)
+		fn, err = newRangeValidator[int32](fieldName, minStr, maxStr)
 		if err != nil {
 			return nil, err
 		}
 
 	case reflect.Int64:
-		fn, err = newIntRangeValidator[int64](fieldName, minStr, maxStr)
+		fn, err = newRangeValidator[int64](fieldName, minStr, maxStr)
 		if err != nil {
 			return nil, err
 		}
 
 	case reflect.Uint:
-		fn, err = newUintRangeValidator[uint](fieldName, minStr, maxStr)
+		fn, err = newRangeValidator[uint](fieldName, minStr, maxStr)
 		if err != nil {
 			return nil, err
 		}
 
 	case reflect.Uint8:
-		fn, err = newUintRangeValidator[uint8](fieldName, minStr, maxStr)
+		fn, err = newRangeValidator[uint8](fieldName, minStr, maxStr)
 		if err != nil {
 			return nil, err
 		}
 
 	case reflect.Uint16:
-		fn, err = newUintRangeValidator[uint16](fieldName, minStr, maxStr)
+		fn, err = newRangeValidator[uint16](fieldName, minStr, maxStr)
 		if err != nil {
 			return nil, err
 		}
 
 	case reflect.Uint32:
-		fn, err = newUintRangeValidator[uint32](fieldName, minStr, maxStr)
+		fn, err = newRangeValidator[uint32](fieldName, minStr, maxStr)
 		if err != nil {
 			return nil, err
 		}
 
 	case reflect.Uint64:
-		fn, err = newUintRangeValidator[uint64](fieldName, minStr, maxStr)
+		fn, err = newRangeValidator[uint64](fieldName, minStr, maxStr)
 		if err != nil {
 			return nil, err
 		}
 
 	case reflect.Float32:
-		fn, err = newFloatRangeValidator[float32](fieldName, minStr, maxStr)
+		fn, err = newRangeValidator[float32](fieldName, minStr, maxStr)
 		if err != nil {
 			return nil, err
 		}
 
 	case reflect.Float64:
-		fn, err = newFloatRangeValidator[float64](fieldName, minStr, maxStr)
+		fn, err = newRangeValidator[float64](fieldName, minStr, maxStr)
 		if err != nil {
 			return nil, err
 		}
@@ -258,22 +261,22 @@ func parseRangeValidationWithCache(
 		return nil, fmt.Errorf("invalid field type for min/max validations: %v", fieldType)
 	}
 
-	rangeValidatorCache.Store(cacheKey{t: structType, name: fieldName}, fn)
+	validatorCache.Store(cacheKey, fn)
 
 	return fn, nil
 }
 
-func newIntRangeValidator[T Signed](fieldName string, minStr string, maxStr string) (_ Validator, err error) {
-	var min, max int64
+func newRangeValidator[T Number](fieldName string, minStr string, maxStr string) (_ Validator, err error) {
+	var min, max T
 	if minStr != "" {
-		min, err = strconv.ParseInt(minStr, 10, 64)
+		err := yaml.Unmarshal([]byte(minStr), &min)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse min value for field %q: %q is not a valid integer", fieldName, minStr)
 		}
 	}
 
 	if maxStr != "" {
-		max, err = strconv.ParseInt(maxStr, 10, 64)
+		err = yaml.Unmarshal([]byte(maxStr), &max)
 		if err != nil {
 			return nil, fmt.Errorf("unable to parse max value for field %q: %q is not a valid integer", fieldName, maxStr)
 		}
@@ -288,109 +291,17 @@ func newIntRangeValidator[T Signed](fieldName string, minStr string, maxStr stri
 			return nil
 		}
 
-		intValue := int64(*v)
-
-		if minStr != "" && intValue < min {
+		if minStr != "" && *v < min {
 			return fmt.Errorf(
-				"field %q with value %d is below the min value of %d",
-				fieldName, intValue, min,
+				"field %q with value %v is below the min value of %v",
+				fieldName, *v, min,
 			)
 		}
 
-		if maxStr != "" && intValue > max {
+		if maxStr != "" && *v > max {
 			return fmt.Errorf(
-				"field %q with value %d is above the max value of %d",
-				fieldName, intValue, max,
-			)
-		}
-
-		return nil
-	}, nil
-}
-
-func newUintRangeValidator[T Unsigned](fieldName string, minStr string, maxStr string) (_ Validator, err error) {
-	var min, max uint64
-	if minStr != "" {
-		min, err = strconv.ParseUint(minStr, 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse min value for field %q: %q is not a valid unsigned integer", fieldName, minStr)
-		}
-	}
-
-	if maxStr != "" {
-		max, err = strconv.ParseUint(maxStr, 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse max value for field %q: %q is not a valid unsigned integer", fieldName, maxStr)
-		}
-	}
-
-	return func(value any) error {
-		v, ok := value.(*T)
-		if !ok {
-			return fmt.Errorf("kparser code error: unsigned integer validator called for wrong type: %T", value)
-		}
-		if v == nil {
-			return nil
-		}
-
-		intValue := uint64(*v)
-
-		if minStr != "" && intValue < min {
-			return fmt.Errorf(
-				"field %q with value %d is below the min value of %d",
-				fieldName, intValue, min,
-			)
-		}
-
-		if maxStr != "" && intValue > max {
-			return fmt.Errorf(
-				"field %q with value %d is above the max value of %d",
-				fieldName, intValue, max,
-			)
-		}
-
-		return nil
-	}, nil
-}
-
-func newFloatRangeValidator[T Float](fieldName string, minStr string, maxStr string) (_ Validator, err error) {
-	var min, max float64
-	if minStr != "" {
-		min, err = strconv.ParseFloat(minStr, 64)
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse min value for field %q: %q is not a valid float", fieldName, minStr)
-		}
-	}
-
-	if maxStr != "" {
-		max, err = strconv.ParseFloat(maxStr, 64)
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse max value for field %q: %q is not a valid float", fieldName, maxStr)
-		}
-	}
-
-	return func(value any) error {
-		v, ok := value.(*T)
-		if !ok {
-			return fmt.Errorf("kparser code error: float validator called for wrong type: %T", value)
-		}
-		if v == nil {
-			return nil
-		}
-
-		intValue := float64(*v)
-
-		if minStr != "" && intValue < min {
-			return fmt.Errorf(
-				"field %q with value %f is below the min value of %f",
-				fieldName, intValue, min,
-			)
-		}
-
-		if maxStr != "" && intValue > max {
-			return fmt.Errorf(
-				"field %q with value %f is above the max value of %f",
-				fieldName, intValue, max,
+				"field %q with value %v is above the max value of %v",
+				fieldName, *v, max,
 			)
 		}
 
