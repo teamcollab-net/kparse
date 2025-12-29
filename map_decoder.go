@@ -33,24 +33,34 @@ func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecode
 		if field.Tags["validate"] != "" {
 			rules := strings.Split(field.Tags["validate"], ",")
 			for _, rule := range rules {
-				name, value, _ := strings.Cut(rule, "=")
+				op, value := extractOpAndValue(rule)
 
-				switch name {
+				switch op {
 				case "required":
 					required = true
 
-				case "min":
+				case ">-": // fix incorrectly identified op:
+					// op = ">"
+					value = "-" + value
+
+					fallthrough
+				case ">":
 					validation, err := parseRangeValidationWithCache(structType, field.Name, field.Type, value, "")
 					if err != nil {
-						return fmt.Errorf("error parsing `min` validator: %w", err)
+						return fmt.Errorf("error parsing greater than (`>`) validator: %w", err)
 					}
 
 					validations = append(validations, validation)
 
-				case "max":
+				case "<-": // fix incorrectly identified op:
+					// op = "<"
+					value = "-" + value
+
+					fallthrough
+				case "<": // less than
 					validation, err := parseRangeValidationWithCache(structType, field.Name, field.Type, "", value)
 					if err != nil {
-						return fmt.Errorf("error parsing `max` validator: %w", err)
+						return fmt.Errorf("error parsing less than (`<`) validator: %w", err)
 					}
 
 					validations = append(validations, validation)
@@ -119,6 +129,38 @@ func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecode
 	})
 
 	return errors.Join(err, errs)
+}
+
+func extractOpAndValue(rule string) (op string, value string) {
+	if rule == "" {
+		return "", ""
+	}
+
+	i := 0
+	// Check if rule starts with a letter (named operation)
+	if isAlpha(rule[0]) {
+		// Extract word containing only letters
+		for i < len(rule) && isAlpha(rule[i]) {
+			i++
+		}
+	} else {
+		// Otherwise, extract non-alphanumeric characters as the operator
+		for i < len(rule) && !isAlphaNumeric(rule[i]) {
+			i++
+		}
+	}
+
+	op = rule[:i]
+	value = rule[i:]
+	return op, value
+}
+
+func isAlpha(c byte) bool {
+	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+}
+
+func isAlphaNumeric(c byte) bool {
+	return isAlpha(c) || c >= '0' && c <= '9'
 }
 
 type cacheKey struct {

@@ -206,9 +206,9 @@ func TestMapTagDecoder(t *testing.T) {
 				{
 					desc: "should allow values in range",
 					structPtr: &struct {
-						Salary     int `map:"salary" validate:"min=1000"`
-						AgeInYears int `map:"age" validate:"max=100"`
-						HeightInCm int `map:"height" validate:"min=140,max=230"`
+						Salary     int `map:"salary" validate:">1000"`
+						AgeInYears int `map:"age" validate:"<100"`
+						HeightInCm int `map:"height" validate:">140,<230"`
 					}{},
 					sourceMap: map[string]LazyDecoder{
 						"salary": testDecoder(2000),
@@ -219,9 +219,9 @@ func TestMapTagDecoder(t *testing.T) {
 				{
 					desc: "should block if value below minimum",
 					structPtr: &struct {
-						ValidBefore int `map:"before" validate:"max=100"`
-						BelowMin    int `map:"belowMin" validate:"min=1000"`
-						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+						ValidBefore int `map:"before" validate:"<100"`
+						BelowMin    int `map:"belowMin" validate:">1000"`
+						ValidAfter  int `map:"after" validate:">140,<230"`
 					}{},
 					sourceMap: map[string]LazyDecoder{
 						"before":   testDecoder(45),
@@ -233,9 +233,9 @@ func TestMapTagDecoder(t *testing.T) {
 				{
 					desc: "should block if value above maximum",
 					structPtr: &struct {
-						ValidBefore int `map:"before" validate:"max=100"`
-						AboveMax    int `map:"aboveMax" validate:"max=100"`
-						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+						ValidBefore int `map:"before" validate:"<100"`
+						AboveMax    int `map:"aboveMax" validate:"<100"`
+						ValidAfter  int `map:"after" validate:">140,<230"`
 					}{},
 					sourceMap: map[string]LazyDecoder{
 						"before":   testDecoder(45),
@@ -247,9 +247,9 @@ func TestMapTagDecoder(t *testing.T) {
 				{
 					desc: "should not fail the validation if value is missing",
 					structPtr: &struct {
-						ValidBefore  int `map:"before" validate:"max=100"`
-						MissingValue int `map:"missing" validate:"max=100"`
-						ValidAfter   int `map:"after" validate:"min=140,max=230"`
+						ValidBefore  int `map:"before" validate:"<100"`
+						MissingValue int `map:"missing" validate:"<100"`
+						ValidAfter   int `map:"after" validate:">140,<230"`
 					}{},
 					sourceMap: map[string]LazyDecoder{
 						"before": testDecoder(45),
@@ -259,9 +259,9 @@ func TestMapTagDecoder(t *testing.T) {
 				{
 					desc: "should not conflict with the required validation when field when all is valid",
 					structPtr: &struct {
-						ValidBefore int `map:"before" validate:"max=100"`
-						Required    int `map:"required" validate:"required,max=100"`
-						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+						ValidBefore int `map:"before" validate:"<100"`
+						Required    int `map:"required" validate:"required,<100"`
+						ValidAfter  int `map:"after" validate:">140,<230"`
 					}{},
 					sourceMap: map[string]LazyDecoder{
 						"before":   testDecoder(45),
@@ -272,9 +272,9 @@ func TestMapTagDecoder(t *testing.T) {
 				{
 					desc: "should not conflict with the required validation when field is missing",
 					structPtr: &struct {
-						ValidBefore int `map:"before" validate:"max=100"`
-						Required    int `map:"required" validate:"required,max=100"`
-						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+						ValidBefore int `map:"before" validate:"<100"`
+						Required    int `map:"required" validate:"required,<100"`
+						ValidAfter  int `map:"after" validate:">140,<230"`
 					}{},
 					sourceMap: map[string]LazyDecoder{
 						"before": testDecoder(45),
@@ -285,9 +285,9 @@ func TestMapTagDecoder(t *testing.T) {
 				{
 					desc: "should not conflict with the required validation when field is not in range",
 					structPtr: &struct {
-						ValidBefore int `map:"before" validate:"max=100"`
-						Required    int `map:"required" validate:"required,max=100"`
-						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+						ValidBefore int `map:"before" validate:"<100"`
+						Required    int `map:"required" validate:"required,<100"`
+						ValidAfter  int `map:"after" validate:">140,<230"`
 					}{},
 					sourceMap: map[string]LazyDecoder{
 						"before":   testDecoder(45),
@@ -299,10 +299,10 @@ func TestMapTagDecoder(t *testing.T) {
 				{
 					desc: "should work for negative fields",
 					structPtr: &struct {
-						ValidBefore int `map:"before" validate:"max=100"`
-						MinNegative int `map:"minNegative" validate:"min=-10"`
-						MaxNegative int `map:"maxNegative" validate:"max=-10"`
-						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+						ValidBefore int `map:"before" validate:"<100"`
+						MinNegative int `map:"minNegative" validate:">-10"`
+						MaxNegative int `map:"maxNegative" validate:"<-10"`
+						ValidAfter  int `map:"after" validate:">140,<230"`
 					}{},
 					sourceMap: map[string]LazyDecoder{
 						"before":      testDecoder(45),
@@ -314,9 +314,9 @@ func TestMapTagDecoder(t *testing.T) {
 				{
 					desc: "should fail for min out of range on a negative field",
 					structPtr: &struct {
-						ValidBefore int `map:"before" validate:"max=100"`
-						Negative    int `map:"negative" validate:"min=-10"`
-						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+						ValidBefore int `map:"before" validate:"<100"`
+						Negative    int `map:"negative" validate:">-10"`
+						ValidAfter  int `map:"after" validate:">140,<230"`
 					}{},
 					sourceMap: map[string]LazyDecoder{
 						"before":   testDecoder(45),
@@ -328,9 +328,9 @@ func TestMapTagDecoder(t *testing.T) {
 				{
 					desc: "should fail for max out of range on a negative field",
 					structPtr: &struct {
-						ValidBefore int `map:"before" validate:"max=100"`
-						Negative    int `map:"negative" validate:"max=-10"`
-						ValidAfter  int `map:"after" validate:"min=140,max=230"`
+						ValidBefore int `map:"before" validate:"<100"`
+						Negative    int `map:"negative" validate:"<-10"`
+						ValidAfter  int `map:"after" validate:">140,<230"`
 					}{},
 					sourceMap: map[string]LazyDecoder{
 						"before":   testDecoder(45),
@@ -342,20 +342,20 @@ func TestMapTagDecoder(t *testing.T) {
 				{
 					desc: "min/max should work for different types of numbers",
 					structPtr: &struct {
-						Int   int   `map:"int" validate:"min=0,max=100"`
-						Int8  int8  `map:"int8" validate:"min=0,max=100"`
-						Int16 int16 `map:"int16" validate:"min=0,max=100"`
-						Int32 int32 `map:"int32" validate:"min=0,max=100"`
-						Int64 int64 `map:"int64" validate:"min=0,max=100"`
+						Int   int   `map:"int" validate:">0,<100"`
+						Int8  int8  `map:"int8" validate:">0,<100"`
+						Int16 int16 `map:"int16" validate:">0,<100"`
+						Int32 int32 `map:"int32" validate:">0,<100"`
+						Int64 int64 `map:"int64" validate:">0,<100"`
 
-						Uint   uint   `map:"uint" validate:"min=0,max=100"`
-						Uint8  uint8  `map:"uint8" validate:"min=0,max=100"`
-						Uint16 uint16 `map:"uint16" validate:"min=0,max=100"`
-						Uint32 uint32 `map:"uint32" validate:"min=0,max=100"`
-						Uint64 uint64 `map:"uint64" validate:"min=0,max=100"`
+						Uint   uint   `map:"uint" validate:">0,<100"`
+						Uint8  uint8  `map:"uint8" validate:">0,<100"`
+						Uint16 uint16 `map:"uint16" validate:">0,<100"`
+						Uint32 uint32 `map:"uint32" validate:">0,<100"`
+						Uint64 uint64 `map:"uint64" validate:">0,<100"`
 
-						Float32 float32 `map:"float32" validate:"min=0.5,max=100.5"`
-						Float64 float64 `map:"float64" validate:"min=0.5,max=100.5"`
+						Float32 float32 `map:"float32" validate:">0.5,<100.5"`
+						Float64 float64 `map:"float64" validate:">0.5,<100.5"`
 					}{},
 					sourceMap: map[string]LazyDecoder{
 						"int":   testDecoder(50),
@@ -377,35 +377,35 @@ func TestMapTagDecoder(t *testing.T) {
 				{
 					desc: "min/max should correctly return error for different types of numbers",
 					structPtr: &struct {
-						IntBelowMin   int   `map:"intBelowMin" validate:"min=100"`
-						Int8BelowMin  int8  `map:"int8BelowMin" validate:"min=100"`
-						Int16BelowMin int16 `map:"int16BelowMin" validate:"min=100"`
-						Int32BelowMin int32 `map:"int32BelowMin" validate:"min=100"`
-						Int64BelowMin int64 `map:"int64BelowMin" validate:"min=100"`
+						IntBelowMin   int   `map:"intBelowMin" validate:">100"`
+						Int8BelowMin  int8  `map:"int8BelowMin" validate:">100"`
+						Int16BelowMin int16 `map:"int16BelowMin" validate:">100"`
+						Int32BelowMin int32 `map:"int32BelowMin" validate:">100"`
+						Int64BelowMin int64 `map:"int64BelowMin" validate:">100"`
 
-						IntAboveMax   int   `map:"intAboveMax" validate:"max=10"`
-						Int8AboveMax  int8  `map:"int8AboveMax" validate:"max=10"`
-						Int16AboveMax int16 `map:"int16AboveMax" validate:"max=10"`
-						Int32AboveMax int32 `map:"int32AboveMax" validate:"max=10"`
-						Int64AboveMax int64 `map:"int64AboveMax" validate:"max=10"`
+						IntAboveMax   int   `map:"intAboveMax" validate:"<10"`
+						Int8AboveMax  int8  `map:"int8AboveMax" validate:"<10"`
+						Int16AboveMax int16 `map:"int16AboveMax" validate:"<10"`
+						Int32AboveMax int32 `map:"int32AboveMax" validate:"<10"`
+						Int64AboveMax int64 `map:"int64AboveMax" validate:"<10"`
 
-						UintBelowMin   uint   `map:"uintBelowMin" validate:"min=100"`
-						Uint8BelowMin  uint8  `map:"uint8BelowMin" validate:"min=100"`
-						Uint16BelowMin uint16 `map:"uint16BelowMin" validate:"min=100"`
-						Uint32BelowMin uint32 `map:"uint32BelowMin" validate:"min=100"`
-						Uint64BelowMin uint64 `map:"uint64BelowMin" validate:"min=100"`
+						UintBelowMin   uint   `map:"uintBelowMin" validate:">100"`
+						Uint8BelowMin  uint8  `map:"uint8BelowMin" validate:">100"`
+						Uint16BelowMin uint16 `map:"uint16BelowMin" validate:">100"`
+						Uint32BelowMin uint32 `map:"uint32BelowMin" validate:">100"`
+						Uint64BelowMin uint64 `map:"uint64BelowMin" validate:">100"`
 
-						UintAboveMax   uint   `map:"uintAboveMax" validate:"max=10"`
-						Uint8AboveMax  uint8  `map:"uint8AboveMax" validate:"max=10"`
-						Uint16AboveMax uint16 `map:"uint16AboveMax" validate:"max=10"`
-						Uint32AboveMax uint32 `map:"uint32AboveMax" validate:"max=10"`
-						Uint64AboveMax uint64 `map:"uint64AboveMax" validate:"max=10"`
+						UintAboveMax   uint   `map:"uintAboveMax" validate:"<10"`
+						Uint8AboveMax  uint8  `map:"uint8AboveMax" validate:"<10"`
+						Uint16AboveMax uint16 `map:"uint16AboveMax" validate:"<10"`
+						Uint32AboveMax uint32 `map:"uint32AboveMax" validate:"<10"`
+						Uint64AboveMax uint64 `map:"uint64AboveMax" validate:"<10"`
 
-						Float32BelowMin float32 `map:"float32BelowMin" validate:"min=100.5"`
-						Float64BelowMin float64 `map:"float64BelowMin" validate:"min=100.5"`
+						Float32BelowMin float32 `map:"float32BelowMin" validate:">100.5"`
+						Float64BelowMin float64 `map:"float64BelowMin" validate:">100.5"`
 
-						Float32AboveMax float32 `map:"float32AboveMax" validate:"max=10.5"`
-						Float64AboveMax float64 `map:"float64AboveMax" validate:"max=10.5"`
+						Float32AboveMax float32 `map:"float32AboveMax" validate:"<10.5"`
+						Float64AboveMax float64 `map:"float64AboveMax" validate:"<10.5"`
 					}{},
 					sourceMap: map[string]LazyDecoder{
 						"intBelowMin":   testDecoder(50),
