@@ -17,8 +17,6 @@ type Validator func(value any) error
 //
 // It works recursively so you can pass nested structs to it.
 func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecoder) (errs error) {
-	structType := reflect.TypeOf(structPtr)
-
 	err := structi.ForEach(structPtr, func(field structi.Field) error {
 		// Ignore multiples fields if there is a `,` as in `json:"foo,omitempty"`
 		key := strings.SplitN(field.Tags[tagName], ",", 2)[0]
@@ -30,46 +28,37 @@ func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecode
 
 		validations := []Validator{}
 		if field.Tags["validate"] != "" {
-			rules := strings.Split(field.Tags["validate"], ",")
-			for _, rule := range rules {
-				op, value := extractOpAndValue(rule)
+			expressions := strings.Split(field.Tags["validate"], ",")
+			for _, exp := range expressions {
+				op, rule := extractOpAndRule(exp)
 
-				switch op {
-				case "required":
+				if op == "required" {
 					required = true
-
-				case ">-": // fix incorrectly identified op:
-					// op = ">"
-					value = "-" + value
-
-					fallthrough
-				case ">":
-					validation, err := parseRangeValidationWithCache(structType, field.Name, field.Type, value, "")
-					if err != nil {
-						return fmt.Errorf("error parsing greater than (`>`) validator: %w", err)
-					}
-
-					validations = append(validations, validation)
-
-				case "<-": // fix incorrectly identified op:
-					// op = "<"
-					value = "-" + value
-
-					fallthrough
-				case "<": // less than
-					validation, err := parseRangeValidationWithCache(structType, field.Name, field.Type, "", value)
-					if err != nil {
-						return fmt.Errorf("error parsing less than (`<`) validator: %w", err)
-					}
-
-					validations = append(validations, validation)
-
-				default:
-					return fmt.Errorf(
-						"unrecognized validation rule: '%s' on struct field: '%s'",
-						rule, field.Name,
-					)
+					continue
 				}
+
+				cacheKey := cacheKey{
+					Kind:       field.Type.Kind(),
+					FieldName:  field.Name,
+					Expression: exp,
+				}
+
+				validator, err := withCache(cacheKey, func() (validator Validator, err error) {
+					factory, found := validatorFactoryMap[validatorFactoryMapKey{op, field.Type.Kind()}]
+					if !found {
+						return nil, fmt.Errorf(
+							"unrecognized validation exp: '%s' on struct field: '%s'",
+							exp, field.Name,
+						)
+					}
+
+					return factory(field.Name, rule)
+				})
+				if err != nil {
+					return err
+				}
+
+				validations = append(validations, validator)
 			}
 		}
 
@@ -130,181 +119,45 @@ func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecode
 	return errors.Join(err, errs)
 }
 
-func extractOpAndValue(rule string) (op string, value string) {
-	if rule == "" {
+func extractOpAndRule(exp string) (op string, rule string) {
+	if exp == "" {
 		return "", ""
 	}
 
+	// Parse the operator name:
 	i := 0
-	// Check if rule starts with a letter (named operation)
-	if isAlpha(rule[0]) {
-		// Extract word containing only letters
-		for i < len(rule) && isAlpha(rule[i]) {
-			i++
-		}
-	} else {
-		// Otherwise, extract non-alphanumeric characters as the operator
-		for i < len(rule) && !isAlphaNumeric(rule[i]) {
-			i++
-		}
+	for i < len(exp) && isAlpha(exp[i]) {
+		i++
 	}
 
-	op = rule[:i]
-	value = rule[i:]
-	return op, value
+	op = exp[:i]
+	rule = exp[i:]
+	return op, rule
 }
 
 func isAlpha(c byte) bool {
 	return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 }
 
-func isAlphaNumeric(c byte) bool {
-	return isAlpha(c) || c >= '0' && c <= '9'
-}
-
 type cacheKey struct {
-	t    reflect.Type
-	name string
+	Kind       reflect.Kind
+	FieldName  string
+	Expression string
 }
 
 var validatorCache sync.Map
 
-func parseRangeValidationWithCache(
-	structType reflect.Type,
-	fieldName string,
-	fieldType reflect.Type,
-	minStr string,
-	maxStr string,
-) (fn Validator, err error) {
-	cacheKey := cacheKey{
-		t:    structType,
-		name: fieldName,
-	}
+func withCache(cacheKey cacheKey, fn func() (Validator, error)) (Validator, error) {
 	if v, _ := validatorCache.Load(cacheKey); v != nil {
 		return v.(Validator), nil
 	}
 
-	switch fieldType.Kind() {
-	case reflect.Int:
-		fn, err = newRangeValidator[int](fieldName, minStr, maxStr)
-		if err != nil {
-			return nil, err
-		}
-
-	case reflect.Int8:
-		fn, err = newRangeValidator[int8](fieldName, minStr, maxStr)
-		if err != nil {
-			return nil, err
-		}
-
-	case reflect.Int16:
-		fn, err = newRangeValidator[int16](fieldName, minStr, maxStr)
-		if err != nil {
-			return nil, err
-		}
-
-	case reflect.Int32:
-		fn, err = newRangeValidator[int32](fieldName, minStr, maxStr)
-		if err != nil {
-			return nil, err
-		}
-
-	case reflect.Int64:
-		fn, err = newRangeValidator[int64](fieldName, minStr, maxStr)
-		if err != nil {
-			return nil, err
-		}
-
-	case reflect.Uint:
-		fn, err = newRangeValidator[uint](fieldName, minStr, maxStr)
-		if err != nil {
-			return nil, err
-		}
-
-	case reflect.Uint8:
-		fn, err = newRangeValidator[uint8](fieldName, minStr, maxStr)
-		if err != nil {
-			return nil, err
-		}
-
-	case reflect.Uint16:
-		fn, err = newRangeValidator[uint16](fieldName, minStr, maxStr)
-		if err != nil {
-			return nil, err
-		}
-
-	case reflect.Uint32:
-		fn, err = newRangeValidator[uint32](fieldName, minStr, maxStr)
-		if err != nil {
-			return nil, err
-		}
-
-	case reflect.Uint64:
-		fn, err = newRangeValidator[uint64](fieldName, minStr, maxStr)
-		if err != nil {
-			return nil, err
-		}
-
-	case reflect.Float32:
-		fn, err = newRangeValidator[float32](fieldName, minStr, maxStr)
-		if err != nil {
-			return nil, err
-		}
-
-	case reflect.Float64:
-		fn, err = newRangeValidator[float64](fieldName, minStr, maxStr)
-		if err != nil {
-			return nil, err
-		}
-
-	default:
-		return nil, fmt.Errorf("invalid field type for min/max validations: %v", fieldType)
+	validator, err := fn()
+	if err != nil {
+		return nil, err
 	}
 
-	validatorCache.Store(cacheKey, fn)
+	validatorCache.Store(cacheKey, validator)
 
-	return fn, nil
-}
-
-func newRangeValidator[T Number](fieldName string, minStr string, maxStr string) (_ Validator, err error) {
-	var min, max T
-	if minStr != "" {
-		err := yaml.Unmarshal([]byte(minStr), &min)
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse min value for field %q: %q is not a valid integer", fieldName, minStr)
-		}
-	}
-
-	if maxStr != "" {
-		err = yaml.Unmarshal([]byte(maxStr), &max)
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse max value for field %q: %q is not a valid integer", fieldName, maxStr)
-		}
-	}
-
-	return func(value any) error {
-		v, ok := value.(*T)
-		if !ok {
-			return fmt.Errorf("kparser code error: integer validator called for wrong type: %T", value)
-		}
-		if v == nil {
-			return nil
-		}
-
-		if minStr != "" && *v < min {
-			return fmt.Errorf(
-				"field %q with value %v is below the min value of %v",
-				fieldName, *v, min,
-			)
-		}
-
-		if maxStr != "" && *v > max {
-			return fmt.Errorf(
-				"field %q with value %v is above the max value of %v",
-				fieldName, *v, max,
-			)
-		}
-
-		return nil
-	}, nil
+	return validator, nil
 }

@@ -228,7 +228,7 @@ func TestMapTagDecoder(t *testing.T) {
 						"belowMin": testDecoder(500),
 						"after":    testDecoder(178),
 					},
-					expectErrToContain: []string{"BelowMin", "min", "500", "1000"},
+					expectErrToContain: []string{"BelowMin", ">", "500", "1000"},
 				},
 				{
 					desc: "should block if value above maximum",
@@ -242,7 +242,7 @@ func TestMapTagDecoder(t *testing.T) {
 						"aboveMax": testDecoder(500),
 						"after":    testDecoder(178),
 					},
-					expectErrToContain: []string{"AboveMax", "max", "500", "100"},
+					expectErrToContain: []string{"AboveMax", "<", "500", "100"},
 				},
 				{
 					desc: "should not fail the validation if value is missing",
@@ -294,7 +294,7 @@ func TestMapTagDecoder(t *testing.T) {
 						"required": testDecoder(120), // not in range
 						"after":    testDecoder(178),
 					},
-					expectErrToContain: []string{"Required", "above", "max"},
+					expectErrToContain: []string{"Required", "120", "<", "100"},
 				},
 				{
 					desc: "should work for negative fields",
@@ -323,7 +323,7 @@ func TestMapTagDecoder(t *testing.T) {
 						"negative": testDecoder(-15),
 						"after":    testDecoder(178),
 					},
-					expectErrToContain: []string{"Negative", "below", "min", "-15", "-10"},
+					expectErrToContain: []string{"Negative", "-15", ">", "-10"},
 				},
 				{
 					desc: "should fail for max out of range on a negative field",
@@ -337,7 +337,7 @@ func TestMapTagDecoder(t *testing.T) {
 						"negative": testDecoder(-5),
 						"after":    testDecoder(178),
 					},
-					expectErrToContain: []string{"Negative", "above", "max", "-5", "-10"},
+					expectErrToContain: []string{"Negative", "-5", "<", "-10"},
 				},
 				{
 					desc: "min/max should work for different types of numbers",
