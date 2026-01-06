@@ -140,8 +140,14 @@ func isAlpha(c byte) bool {
 }
 
 type cacheKey struct {
-	Kind       reflect.Kind
-	FieldName  string
+	// The validation needs to be compiled (with generics) for each kind of data
+	Kind reflect.Kind
+
+	// We need to consider the field name because error messages will output this name,
+	// so we each field name requires a new validator function so the errors show up properly.
+	FieldName string
+
+	// If the expression is the same even on different structs we can reuse the same key
 	Expression string
 }
 
