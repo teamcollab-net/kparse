@@ -29,11 +29,17 @@ var validatorFactoryMap = map[validatorFactoryMapKey]validatorFactory{
 	{"", reflect.Uint64}:  newRangeValidator[uint64],
 	{"", reflect.Float32}: newRangeValidator[float32],
 	{"", reflect.Float64}: newRangeValidator[float64],
+
+	{"len", reflect.String}: newLenValidator,
+	{"len", reflect.Slice}:  newLenValidator,
+	{"len", reflect.Map}:    newLenValidator,
+	{"len", reflect.Array}:  newLenValidator,
+	{"len", reflect.Chan}:   newLenValidator,
 }
 
 func newRangeValidator[T Number](fieldName string, rule string) (_ Validator, err error) {
 	var i int
-	for i < len(rule) && isRangeOpChar(rule[i]) {
+	for i < len(rule) && isInequalityChar(rule[i]) {
 		i++
 	}
 
@@ -70,7 +76,7 @@ func newRangeValidator[T Number](fieldName string, rule string) (_ Validator, er
 	return func(value any) error {
 		v, _ := value.(*T)
 		if v == nil {
-			return fmt.Errorf("kparser code error: integer validator called for invalid input: %T", value)
+			return fmt.Errorf("kparser code error: range validator called for invalid input: %T", value)
 		}
 
 		if !isValid(*v, limit) {
@@ -84,6 +90,56 @@ func newRangeValidator[T Number](fieldName string, rule string) (_ Validator, er
 	}, nil
 }
 
-func isRangeOpChar(c byte) bool {
+func isInequalityChar(c byte) bool {
 	return c == '<' || c == '>' || c == '='
+}
+
+func newLenValidator(fieldName string, rule string) (_ Validator, err error) {
+	var i int
+	for i < len(rule) && isInequalityChar(rule[i]) {
+		i++
+	}
+
+	op := rule[:i]
+
+	var isValid func(len int, limit int) bool
+	switch op {
+	case "<":
+		isValid = func(length int, limit int) bool {
+			return length < limit
+		}
+	case "<=":
+		isValid = func(length int, limit int) bool {
+			return length <= limit
+		}
+	case ">":
+		isValid = func(length int, limit int) bool {
+			return length > limit
+		}
+	case ">=":
+		isValid = func(length int, limit int) bool {
+			return length >= limit
+		}
+	default:
+		return nil, fmt.Errorf("unrecognized validator format: '%s'", op+"."+rule)
+	}
+
+	var limit int
+	err = yaml.Unmarshal([]byte(rule[i:]), &limit)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing number for length validator: '%s', usage: [< | > | <= | >=]<number>", rule)
+	}
+
+	return func(value any) error {
+		len := reflect.ValueOf(value).Elem().Len()
+
+		if !isValid(len, limit) {
+			return fmt.Errorf(
+				"field %q with len %v should be %s %v",
+				fieldName, len, op, limit,
+			)
+		}
+
+		return nil
+	}, nil
 }

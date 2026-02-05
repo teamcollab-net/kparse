@@ -30,9 +30,9 @@ func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecode
 		if field.Tags["validate"] != "" {
 			expressions := strings.Split(field.Tags["validate"], ",")
 			for _, exp := range expressions {
-				op, rule := extractOpAndRule(exp)
+				validatorName, rule := extractValidatorNameAndRule(exp)
 
-				if op == "required" {
+				if validatorName == "required" {
 					required = true
 					continue
 				}
@@ -44,7 +44,7 @@ func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecode
 				}
 
 				validator, err := withCache(cacheKey, func() (validator Validator, err error) {
-					factory, found := validatorFactoryMap[validatorFactoryMapKey{op, field.Type.Kind()}]
+					factory, found := validatorFactoryMap[validatorFactoryMapKey{validatorName, field.Type.Kind()}]
 					if !found {
 						return nil, fmt.Errorf(
 							"unrecognized validation exp: '%s' on struct field: '%s'",
@@ -119,7 +119,7 @@ func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecode
 	return errors.Join(err, errs)
 }
 
-func extractOpAndRule(exp string) (op string, rule string) {
+func extractValidatorNameAndRule(exp string) (validatorName string, rule string) {
 	if exp == "" {
 		return "", ""
 	}
@@ -130,9 +130,9 @@ func extractOpAndRule(exp string) (op string, rule string) {
 		i++
 	}
 
-	op = exp[:i]
+	validatorName = exp[:i]
 	rule = exp[i:]
-	return op, rule
+	return validatorName, rule
 }
 
 func isAlpha(c byte) bool {

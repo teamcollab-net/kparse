@@ -469,6 +469,96 @@ func TestMapTagDecoder(t *testing.T) {
 						"Float64AboveMax",
 					},
 				},
+				{
+					desc: "no error for max length on string",
+					structPtr: &struct {
+						Str string `map:"str" validate:"len<10"`
+					}{},
+					sourceMap: map[string]LazyDecoder{"str": testDecoder("foo")},
+				},
+				{
+					desc: "error for max length on string",
+					structPtr: &struct {
+						Str string `map:"str" validate:"len<1"`
+					}{},
+					sourceMap:          map[string]LazyDecoder{"str": testDecoder("foo")},
+					expectErrToContain: []string{"Str", "3", "<", "1"},
+				},
+				{
+					desc: "no error for min length on string",
+					structPtr: &struct {
+						Str string `map:"str" validate:"len>2"`
+					}{},
+					sourceMap: map[string]LazyDecoder{"str": testDecoder("foo")},
+				},
+				{
+					desc: "error for min length on string",
+					structPtr: &struct {
+						Str string `map:"str" validate:"len>4"`
+					}{},
+					sourceMap:          map[string]LazyDecoder{"str": testDecoder("foo")},
+					expectErrToContain: []string{"Str", "3", ">", "4"},
+				},
+				{
+					desc: "no error for max length on slice",
+					structPtr: &struct {
+						Slice []int `map:"slice" validate:"len<10"`
+					}{},
+					sourceMap: map[string]LazyDecoder{"slice": testDecoder([]int{1, 2, 3})},
+				},
+				{
+					desc: "error for max length on slice",
+					structPtr: &struct {
+						Slice []int `map:"slice" validate:"len<1"`
+					}{},
+					sourceMap:          map[string]LazyDecoder{"slice": testDecoder([]int{1, 2, 3})},
+					expectErrToContain: []string{"Slice", "3", "<", "1"},
+				},
+				{
+					desc: "no error for min length on slice",
+					structPtr: &struct {
+						Slice []int `map:"slice" validate:"len>2"`
+					}{},
+					sourceMap: map[string]LazyDecoder{"slice": testDecoder([]int{1, 2, 3})},
+				},
+				{
+					desc: "error for min length on slice",
+					structPtr: &struct {
+						Slice []int `map:"slice" validate:"len>4"`
+					}{},
+					sourceMap:          map[string]LazyDecoder{"slice": testDecoder([]int{1, 2, 3})},
+					expectErrToContain: []string{"Slice", "3", ">", "4"},
+				},
+				{
+					desc: "no error for max length on map",
+					structPtr: &struct {
+						Map map[string]any `map:"map" validate:"len<10"`
+					}{},
+					sourceMap: map[string]LazyDecoder{"map": testDecoder(map[string]any{"a": 1, "b": 2, "c": 3})},
+				},
+				{
+					desc: "error for max length on map",
+					structPtr: &struct {
+						Map map[string]any `map:"map" validate:"len<1"`
+					}{},
+					sourceMap:          map[string]LazyDecoder{"map": testDecoder(map[string]any{"a": 1, "b": 2, "c": 3})},
+					expectErrToContain: []string{"Map", "3", "<", "1"},
+				},
+				{
+					desc: "no error for min length on map",
+					structPtr: &struct {
+						Map map[string]any `map:"map" validate:"len>2"`
+					}{},
+					sourceMap: map[string]LazyDecoder{"map": testDecoder(map[string]any{"a": 1, "b": 2, "c": 3})},
+				},
+				{
+					desc: "error for min length on map",
+					structPtr: &struct {
+						Map map[string]any `map:"map" validate:"len>4"`
+					}{},
+					sourceMap:          map[string]LazyDecoder{"map": testDecoder(map[string]any{"a": 1, "b": 2, "c": 3})},
+					expectErrToContain: []string{"Map", "3", ">", "4"},
+				},
 			}
 
 			for _, test := range tests {
