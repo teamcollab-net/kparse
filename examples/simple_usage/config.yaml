@@ -5,3 +5,10 @@ baseUrl: example.com
 address:
   city: Belo Horizonte
   country: Brasil
+
+maxRetries: 3
+desc: This example config illustrates all kparser features
+domains:
+  - example.com
+  - google.com
+  - yahoo.com
