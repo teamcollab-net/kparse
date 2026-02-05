@@ -340,6 +340,21 @@ func TestMapTagDecoder(t *testing.T) {
 					expectErrToContain: []string{"Negative", "-5", "<", "-10"},
 				},
 				{
+					desc: "no error for equal validation",
+					structPtr: &struct {
+						V int `map:"v" validate:"=3"`
+					}{},
+					sourceMap: map[string]LazyDecoder{"v": testDecoder(3)},
+				},
+				{
+					desc: "error for equal validation",
+					structPtr: &struct {
+						V int `map:"v" validate:"=4"`
+					}{},
+					sourceMap:          map[string]LazyDecoder{"v": testDecoder(3)},
+					expectErrToContain: []string{"V", "3", "=", "4"},
+				},
+				{
 					desc: "min/max should work for different types of numbers",
 					structPtr: &struct {
 						Int   int   `map:"int" validate:">0,<100"`

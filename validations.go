@@ -63,6 +63,10 @@ func newRangeValidator[T Number](fieldName string, rule string) (_ Validator, er
 		isValid = func(attr T, limit T) bool {
 			return attr >= limit
 		}
+	case "=":
+		isValid = func(attr T, limit T) bool {
+			return attr == limit
+		}
 	default:
 		return nil, fmt.Errorf("unrecognized validator format: '%s'", op+"."+rule)
 	}
@@ -70,7 +74,7 @@ func newRangeValidator[T Number](fieldName string, rule string) (_ Validator, er
 	var limit T
 	err = yaml.Unmarshal([]byte(rule[i:]), &limit)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing number for range validator: '%s', usage: [< | > | <= | >=]<number>", rule)
+		return nil, fmt.Errorf("error parsing number for range validator: '%s', usage: [< | > | <= | >= | =]<number>", rule)
 	}
 
 	return func(value any) error {
@@ -131,7 +135,7 @@ func newLenValidator(fieldName string, rule string) (_ Validator, err error) {
 	var limit int
 	err = yaml.Unmarshal([]byte(rule[i:]), &limit)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing number for length validator: '%s', usage: [< | > | <= | >=]<number>", rule)
+		return nil, fmt.Errorf("error parsing number for length validator: '%s', usage: [< | > | <= | >= | =]<number>", rule)
 	}
 
 	return func(value any) error {
