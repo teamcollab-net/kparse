@@ -120,6 +120,10 @@ func newLenValidator(fieldName string, rule string) (_ Validator, err error) {
 		isValid = func(length int, limit int) bool {
 			return length >= limit
 		}
+	case "=":
+		isValid = func(length int, limit int) bool {
+			return length == limit
+		}
 	default:
 		return nil, fmt.Errorf("unrecognized validator format: '%s'", op+"."+rule)
 	}

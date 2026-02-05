@@ -500,6 +500,21 @@ func TestMapTagDecoder(t *testing.T) {
 					expectErrToContain: []string{"Str", "3", ">", "4"},
 				},
 				{
+					desc: "no error for length equal validation on string",
+					structPtr: &struct {
+						Str string `map:"str" validate:"len=3"`
+					}{},
+					sourceMap: map[string]LazyDecoder{"str": testDecoder("foo")},
+				},
+				{
+					desc: "error for length equal validation on string",
+					structPtr: &struct {
+						Str string `map:"str" validate:"len=4"`
+					}{},
+					sourceMap:          map[string]LazyDecoder{"str": testDecoder("foo")},
+					expectErrToContain: []string{"Str", "3", "=", "4"},
+				},
+				{
 					desc: "no error for max length on slice",
 					structPtr: &struct {
 						Slice []int `map:"slice" validate:"len<10"`
@@ -530,6 +545,21 @@ func TestMapTagDecoder(t *testing.T) {
 					expectErrToContain: []string{"Slice", "3", ">", "4"},
 				},
 				{
+					desc: "no error for length equal validation on slice",
+					structPtr: &struct {
+						Slice []int `map:"slice" validate:"len=3"`
+					}{},
+					sourceMap: map[string]LazyDecoder{"slice": testDecoder([]int{1, 2, 3})},
+				},
+				{
+					desc: "error for length equal validation on slice",
+					structPtr: &struct {
+						Slice []int `map:"slice" validate:"len=4"`
+					}{},
+					sourceMap:          map[string]LazyDecoder{"slice": testDecoder([]int{1, 2, 3})},
+					expectErrToContain: []string{"Slice", "3", "=", "4"},
+				},
+				{
 					desc: "no error for max length on map",
 					structPtr: &struct {
 						Map map[string]any `map:"map" validate:"len<10"`
@@ -558,6 +588,21 @@ func TestMapTagDecoder(t *testing.T) {
 					}{},
 					sourceMap:          map[string]LazyDecoder{"map": testDecoder(map[string]any{"a": 1, "b": 2, "c": 3})},
 					expectErrToContain: []string{"Map", "3", ">", "4"},
+				},
+				{
+					desc: "no error for length equal validation on map",
+					structPtr: &struct {
+						Map map[string]any `map:"map" validate:"len=3"`
+					}{},
+					sourceMap: map[string]LazyDecoder{"map": testDecoder(map[string]any{"a": 1, "b": 2, "c": 3})},
+				},
+				{
+					desc: "error for length equal validation map",
+					structPtr: &struct {
+						Map map[string]any `map:"map" validate:"len=4"`
+					}{},
+					sourceMap:          map[string]LazyDecoder{"map": testDecoder(map[string]any{"a": 1, "b": 2, "c": 3})},
+					expectErrToContain: []string{"Map", "3", "=", "4"},
 				},
 			}
 
