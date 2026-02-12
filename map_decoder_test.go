@@ -80,6 +80,36 @@ func TestMapTagDecoder(t *testing.T) {
 				},
 			},
 			{
+				desc: "should work for structs with struct slices",
+				input: map[string]LazyDecoder{
+					"id": testDecoder(42),
+					"slice": testDecoder([]map[string]any{
+						{"name": "fakeUser1"},
+						{"name": "fakeUser2"},
+					}),
+				},
+				target: &struct {
+					ID    int `map:"id"`
+					Slice []struct {
+						Name string `map:"name"`
+					} `map:"slice"`
+				}{},
+				expected: &struct {
+					ID    int `map:"id"`
+					Slice []struct {
+						Name string `map:"name"`
+					} `map:"slice"`
+				}{
+					ID: 42,
+					Slice: []struct {
+						Name string `map:"name"`
+					}{
+						{Name: "fakeUser1"},
+						{Name: "fakeUser2"},
+					},
+				},
+			},
+			{
 				desc: "should return error if we try to save something that is not a map into a nested struct",
 				input: map[string]LazyDecoder{
 					"id":      testDecoder(42),
