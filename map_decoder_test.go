@@ -7,65 +7,110 @@ import (
 	tt "github.com/teamcollab-net/kparse/internal/testtools"
 )
 
-// This test helper just generates a LazyDecoder from
-// any input data that can be marshaled as JSON, for making
-// it easier to describe the test cases.
-func testDecoder(value any) LazyDecoder {
-	return func(target any) error {
-		bytes, err := json.Marshal(value)
-		if err != nil {
-			return err
-		}
-		return json.Unmarshal(bytes, target)
-	}
-}
-
 func TestMapTagDecoder(t *testing.T) {
-	t.Run("should work for valid structs", func(t *testing.T) {
-		var user struct {
-			ID       int    `map:"id"`
-			Username string `map:"username"`
-			Address  struct {
-				Street  string `map:"street"`
-				City    string `map:"city"`
-				Country string `map:"country"`
-			} `map:"address"`
+	t.Run("basic parsing", func(t *testing.T) {
+		tests := []struct {
+			desc               string
+			input              map[string]LazyDecoder
+			target             any
+			expected           any
+			expectErrToContain []string
+		}{
+			{
+				desc: "should work for valid structs",
+				input: map[string]LazyDecoder{
+					"id":       testDecoder(42),
+					"username": testDecoder("fakeUsername"),
+					"address": testDecoder(map[string]any{
+						"street":  "fakeStreet",
+						"city":    "fakeCity",
+						"country": "fakeCountry",
+					}),
+				},
+				target: &struct {
+					ID       int    `map:"id"`
+					Username string `map:"username"`
+					Address  struct {
+						Street  string `map:"street"`
+						City    string `map:"city"`
+						Country string `map:"country"`
+					} `map:"address"`
+				}{},
+				expected: &struct {
+					ID       int    `map:"id"`
+					Username string `map:"username"`
+					Address  struct {
+						Street  string `map:"street"`
+						City    string `map:"city"`
+						Country string `map:"country"`
+					} `map:"address"`
+				}{
+					ID:       42,
+					Username: "fakeUsername",
+					Address: struct {
+						Street  string `map:"street"`
+						City    string `map:"city"`
+						Country string `map:"country"`
+					}{
+						Street:  "fakeStreet",
+						City:    "fakeCity",
+						Country: "fakeCountry",
+					},
+				},
+			},
+			{
+				desc: "should work for structs with string slices",
+				input: map[string]LazyDecoder{
+					"id":    testDecoder(42),
+					"slice": testDecoder([]string{"fakeUser1", "fakeUser2"}),
+				},
+				target: &struct {
+					ID    int      `map:"id"`
+					Slice []string `map:"slice"`
+				}{},
+				expected: &struct {
+					ID    int      `map:"id"`
+					Slice []string `map:"slice"`
+				}{
+					ID: 42,
+					Slice: []string{
+						"fakeUser1",
+						"fakeUser2",
+					},
+				},
+			},
+			{
+				desc: "should return error if we try to save something that is not a map into a nested struct",
+				input: map[string]LazyDecoder{
+					"id":      testDecoder(42),
+					"address": testDecoder("notAMap"),
+				},
+				target: &struct {
+					ID      int `map:"id"`
+					Address struct {
+						Street string `map:"street"`
+					} `map:"address"`
+				}{},
+				expectErrToContain: []string{
+					"string",
+					"Address",
+					"Street",
+				},
+			},
 		}
-		err := parseFromMap("map", &user, map[string]LazyDecoder{
-			"id":       testDecoder(42),
-			"username": testDecoder("fakeUsername"),
-			"address": testDecoder(map[string]any{
-				"street":  "fakeStreet",
-				"city":    "fakeCity",
-				"country": "fakeCountry",
-			}),
-		})
-		tt.AssertNoErr(t, err)
 
-		tt.AssertEqual(t, user.ID, 42)
-		tt.AssertEqual(t, user.Username, "fakeUsername")
-		tt.AssertEqual(t, user.Address.Street, "fakeStreet")
-		tt.AssertEqual(t, user.Address.City, "fakeCity")
-		tt.AssertEqual(t, user.Address.Country, "fakeCountry")
-	})
+		for _, test := range tests {
+			t.Run(test.desc, func(t *testing.T) {
+				err := parseFromMap("map", test.target, test.input)
+				if test.expectErrToContain != nil {
+					tt.AssertErrContains(t, err, test.expectErrToContain...)
+					return
+				}
+				tt.AssertNoErr(t, err)
 
-	t.Run("should return error if we try to save something that is not a map into a nested struct", func(t *testing.T) {
-		var user struct {
-			ID       int    `map:"id"`
-			Username string `map:"username"`
-			Address  struct {
-				Street  string `map:"street"`
-				City    string `map:"city"`
-				Country string `map:"country"`
-			} `map:"address"`
+				tt.AssertEqual(t, test.target, test.expected)
+			})
 		}
-		err := parseFromMap("map", &user, map[string]LazyDecoder{
-			"id":       testDecoder(42),
-			"username": testDecoder("fakeUsername"),
-			"address":  testDecoder("notAMap"),
-		})
-
-		tt.AssertErrContains(t, err, "string", "Address", "Street", "City", "Country")
 	})
 
 	t.Run("validations", func(t *testing.T) {
@@ -674,42 +719,17 @@ func TestMapTagDecoder(t *testing.T) {
 			tt.AssertEqual(t, user.OptionalStruct.ID, 41)
 		})
 	})
+}
 
-	t.Run("parsing slices", func(t *testing.T) {
-		tests := []struct {
-			desc          string
-			inputSlice    any
-			expectedSlice any
-		}{
-			{
-				desc: "should work for string slices",
-				inputSlice: []string{
-					"fakeUser1",
-					"fakeUser2",
-				},
-				expectedSlice: []string{
-					"fakeUser1",
-					"fakeUser2",
-				},
-			},
+// This test helper just generates a LazyDecoder from
+// any input data that can be marshaled as JSON, for making
+// it easier to describe the test cases.
+func testDecoder(value any) LazyDecoder {
+	return func(target any) error {
+		bytes, err := json.Marshal(value)
+		if err != nil {
+			return err
 		}
-
-		for _, test := range tests {
-			t.Run(test.desc, func(t *testing.T) {
-				var user struct {
-					ID    int      `map:"id"`
-					Slice []string `map:"slice"`
-				}
-
-				err := parseFromMap("map", &user, map[string]LazyDecoder{
-					"id":    testDecoder(42),
-					"slice": testDecoder(test.inputSlice),
-				})
-				tt.AssertNoErr(t, err)
-
-				tt.AssertEqual(t, user.ID, 42)
-				tt.AssertEqual(t, user.Slice, test.expectedSlice)
-			})
-		}
-	})
+		return json.Unmarshal(bytes, target)
+	}
 }
