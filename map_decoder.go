@@ -103,6 +103,46 @@ func parseFromMap(tagName string, structPtr any, sourceMap map[string]LazyDecode
 			return parseFromMap(tagName, field.Value, data)
 		}
 
+		if field.Kind == reflect.Slice && field.Type.Elem().Kind() == reflect.Struct {
+			var data []LazyDecoder
+			err := sourceMap[key].Decode(&data)
+			if err != nil {
+				return fmt.Errorf(
+					"can't map %T into nested slice %s of type %v",
+					sourceMap[key], field.Name, field.Type,
+				)
+			}
+
+			// For slice of structs, we need to convert each LazyDecoder to map[string]LazyDecoder
+			sliceValue := reflect.MakeSlice(field.Type, len(data), len(data))
+
+			for i, lazyDecoder := range data {
+				var itemMap map[string]LazyDecoder
+				err := lazyDecoder.Decode(&itemMap)
+				if err != nil {
+					return fmt.Errorf(
+						"can't map element %d of slice %s into map[string]LazyDecoder: %v",
+						i, field.Name, err,
+					)
+				}
+
+				// Get a pointer to the slice element at position i
+				elemPtr := sliceValue.Index(i).Addr().Interface()
+
+				// Recursively parse the struct
+				err = parseFromMap(tagName, elemPtr, itemMap)
+				if err != nil {
+					return fmt.Errorf(
+						"error parsing element %d of slice %s: %v",
+						i, field.Name, err,
+					)
+				}
+			}
+
+			// Set the slice value to the field
+			return field.Set(sliceValue.Interface())
+		}
+
 		err := sourceMap[key].Decode(field.Value)
 		if err != nil {
 			return err
